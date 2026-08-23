@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>踅基隆 115 - 課程儀表板與管理系統</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- React & Babel CDNs for single file reactive UI -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        html { scroll-behavior: smooth; }
+        .bg-pattern {
+            background-color: #f8fafc;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+    </style>
+</head>
+<body class="bg-pattern text-slate-800 antialiased min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // 預設 VALUE 與 AI 素養檢核指標
+        const PRESET_INDICATORS = [
+            {
+                id: 'V1',
+                title: '1. 促進社會互動與協同學習 (Vivifying Social Learning)',
+                short: '促進社會互動',
+                tagColor: 'bg-blue-100 text-blue-800 border-blue-300',
+                content: '【從孤立走向共構】確保科技不造成孤立，而是創造更深度的合作共構與社會互動。防範學生個人封閉或由 AI 徹底取代同儕對話。'
+            },
+            {
+                id: 'V2',
+                title: '2. 深化後設認知與防範大腦外包 (Activating Metacognition)',
+                short: '深化後設認知',
+                tagColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                content: '【拒絕思考代工】引導自我監控，防止學生將思考與批判過程「大腦外包」給 AI。要求提交 Prompt History 對話歷程作為評量核心。'
+            },
+            {
+                id: 'V3',
+                title: '3. 評估探究歷程與實質回饋 (Learning through Inquiry)',
+                short: '評估探究歷程',
+                tagColor: 'bg-amber-100 text-amber-800 border-amber-300',
+                content: '【重視歷程，非速求答案】重視教與學的探究思考歷程，評估學生的探究與思考過程，而非僅關注快速求得的單一解答。'
+            },
+            {
+                id: 'V4',
+                title: '4. 搭建引導思考的動態鷹架 (Unfolding Guided Scaffolding)',
+                short: '搭建動態鷹架',
+                tagColor: 'bg-purple-100 text-purple-800 border-purple-300',
+                content: '【引導而非直給解答】動態提供認知支持，調節解題時的認知負荷，陪著學生思考，並隨能力提升使鷹架自然褪除。'
+            },
+            {
+                id: 'V5',
+                title: '5. 釐清深層迷思與概念改變 (Eliciting Conceptual Change)',
+                short: '釐清深層迷思',
+                tagColor: 'bg-rose-100 text-rose-800 border-rose-300',
+                content: '【突破深層認知盲點】透過多模態特徵（視覺化、動態模擬或 AI 強烈視覺化反例），幫助學生突破深層的認知框架與迷思概念。'
+            },
+            {
+                id: 'V6',
+                title: '6. 連結真實情境與激發動機 (Embedding in Real Contexts)',
+                short: '連結真實情境',
+                tagColor: 'bg-teal-100 text-teal-800 border-teal-300',
+                content: '【激發內在學習熱情】賦權學生連結真實世界（如基隆郵輪與觀光發展議題），引發真實且持久的內在學習動力與可遷移性。'
+            },
+            {
+                id: 'V7',
+                title: '7. 提供自適應的個人化路徑 (Enabling Adaptive Pathways)',
+                short: '提供自適應路徑',
+                tagColor: 'bg-indigo-100 text-indigo-800 border-indigo-300',
+                content: '【打造專屬學習節奏】提供非線性選擇，符合準備度的差異化，培養學生的自主學習能力與學習代理權（Agency）。'
+            },
+            {
+                id: 'V8',
+                title: '8. 實踐包容設計與差異化 (Embracing Universal Design)',
+                short: '實踐包容設計',
+                tagColor: 'bg-orange-100 text-orange-800 border-orange-300',
+                content: '【落實 UDL 服務多元】彈性調整教學內容與產出（如錄音、繪圖、文字、Podcast），滿足不同起點學生的多元需求。'
+            }
+        ];
+
+        // 初始預設課程模組
+        const DEFAULT_MODULES = [
+            {
+                id: 'mod-1',
+                weekTitle: '第 1-2 週：認識基隆與文化體驗',
+                materialUrl: 'https://docs.google.com/presentation/d/e/2PACX-1vQ3-sample/embed',
+                description: '透過 Pikmin 破冰遊戲與七堵媽祖廟 VR 體驗認識在地文史，進行中元祭與美食闖關知識檢核。',
+                tasks: [
+                    { id: 't1', label: '🕹️ 中元祭知識檢核遊戲', url: 'https://example.com/game1' },
+                    { id: 't2', label: '📄 美食踏查紀錄表', url: 'https://docs.google.com' }
+                ],
+                indicators: ['V1', 'V6']
+            },
+            {
+                id: 'mod-2',
+                weekTitle: '第 8-9 週：地理資訊與人機協作模式',
+                materialUrl: 'https://docs.google.com/document/d/e/2PACX-1vQ3-sample2/embed',
+                description: '建構照片地理說明，練習「人先寫 ➔ AI 描繪 ➔ 人終審」之負責任協作流程，防止思考代工。',
+                tasks: [
+                    { id: 't3', label: '💭 上傳對話紀錄 (Prompt History)', url: 'https://forms.google.com' },
+                    { id: 't4', label: '🗺️ 地理資訊表單', url: 'https://maps.google.com' }
+                ],
+                indicators: ['V2', 'V3', 'V4']
+            }
+        ];
+
+        function App() {
+            // 系統狀態
+            const [modules, setModules] = useState(() => {
+                const saved = localStorage.getItem('keelung_course_modules');
+                return saved ? JSON.parse(saved) : DEFAULT_MODULES;
+            });
+            const [currentUser, setCurrentUser] = useState(null); // null or { username: 't5111' }
+
+            // Modals 狀態
+            const [showLoginModal, setShowLoginModal] = useState(false);
+            const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+            const [loginError, setLoginError] = useState('');
+
+            const [previewUrl, setPreviewUrl] = useState(null); // 全螢幕預覽 URL
+            const [selectedIndicator, setSelectedIndicator] = useState(null); // 點擊指標內涵 Modal
+            const [editingIndicatorModule, setEditingIndicatorModule] = useState(null); // 教師編輯指標 Modal
+
+            // 保存資料至 LocalStorage
+            useEffect(() => {
+                localStorage.setItem('keelung_course_modules', JSON.stringify(modules));
+            }, [modules]);
+
+            // 登入處理
+            const handleLogin = (e) => {
+                e.preventDefault();
+                const { username, password } = loginForm;
+                if ((username === 't5111' || username === 't5125') && password === '24567126') {
+                    setCurrentUser({ username });
+                    setShowLoginModal(false);
+                    setLoginForm({ username: '', password: '' });
+                    setLoginError('');
+                } else {
+                    setLoginError('帳號或密碼錯誤！(試用: t5111 / 24567126)');
+                }
+            };
+
+            const handleLogout = () => {
+                setCurrentUser(null);
+            };
+
+            // 新增模組 (垂直自然往下排序)
+            const handleAddModule = () => {
+                const newId = `mod-${Date.now()}`;
+                const newModule = {
+                    id: newId,
+                    weekTitle: `第 ${modules.length + 1} 模組：新課程進度主題`,
+                    materialUrl: 'https://docs.google.com/presentation/d/e/2PACX-1vQ3-sample/embed',
+                    description: '請輸入本週活動簡述與表現任務（建議 50 字以內）...',
+                    tasks: [
+                        { id: `t-${Date.now()}`, label: '📝 新任務按鈕', url: 'https://google.com' }
+                    ],
+                    indicators: ['V1', 'V2']
+                };
+                setModules([...modules, newModule]);
+                setTimeout(() => {
+                    document.getElementById(newId)?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+            };
+
+            // 刪除模組
+            const handleDeleteModule = (id) => {
+                if (confirm('確定要刪除此課程模組嗎？')) {
+                    setModules(modules.filter(m => m.id !== id));
+                }
+            };
+
+            // 修改模組文字/網址
+            const handleUpdateModule = (id, field, value) => {
+                setModules(modules.map(m => m.id === id ? { ...m, [field]: value } : m));
+            };
+
+            // 新增任務按紐
+            const handleAddTask = (moduleId) => {
+                const label = prompt('請輸入任務按鈕名稱（如：🕹️ 遊戲檢核）：', '新任務按紐');
+                if (!label) return;
+                const url = prompt('請貼上任務目標網址：', 'https://');
+                if (!url) return;
+
+                setModules(modules.map(m => {
+                    if (m.id === moduleId) {
+                        return {
+                            ...m,
+                            tasks: [...m.tasks, { id: `task-${Date.now()}`, label, url }]
+                        };
+                    }
+                    return m;
+                }));
+            };
+
+            // 刪除任務按紐
+            const handleDeleteTask = (moduleId, taskId) => {
+                setModules(modules.map(m => {
+                    if (m.id === moduleId) {
+                        return {
+                            ...m,
+                            tasks: m.tasks.filter(t => t.id !== taskId)
+                        };
+                    }
+                    return m;
+                }));
+            };
+
+            // 勾選/取消指標
+            const handleToggleIndicator = (moduleId, indId) => {
+                setModules(modules.map(m => {
+                    if (m.id === moduleId) {
+                        const exists = m.indicators.includes(indId);
+                        const nextInds = exists
+                            ? m.indicators.filter(i => i !== indId)
+                            : [...m.indicators, indId];
+                        return { ...m, indicators: nextInds };
+                    }
+                    return m;
+                }));
+            };
+
+            return (
+                <div className="pb-20">
+                    {/* 頂部導航列 Header */}
+                    <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                                <div className="bg-indigo-600 text-white p-2 rounded-lg shadow-md">
+                                    <i className="fa-solid fa-graduation-cap text-xl"></i>
+                                </div>
+                                <div>
+                                    <h1 className="font-bold text-slate-800 text-lg leading-tight">來去踅基隆 115</h1>
+                                    <p className="text-xs text-slate-500">課程管理系統儀表板</p>
+                                </div>
+                            </div>
+
+                            {/* 右側下拉選單與登入狀態 */}
+                            <div className="flex items-center space-x-3">
+                                {/* 單元進度下拉選單 (選項 A：平滑捲動) */}
+                                <div className="relative">
+                                    <select
+                                        onChange={(e) => {
+                                            if (e.target.value) {
+                                                document.getElementById(e.target.value)?.scrollIntoView({ behavior: 'smooth' });
+                                            }
+                                        }}
+                                        className="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                    >
+                                        <option value="">🎯 切換單元進度...</option>
+                                        {modules.map((m) => (
+                                            <option key={m.id} value={m.id}>{m.weekTitle}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* 登入 / 管理者狀態 */}
+                                {currentUser ? (
+                                    <div className="flex items-center space-x-2 bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-lg">
+                                        <span className="text-xs text-indigo-700 font-medium">
+                                            <i className="fa-solid fa-user-shield mr-1"></i>
+                                            教師: {currentUser.username}
+                                        </span>
+                                        <button
+                                            onClick={handleAddModule}
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-2.5 py-1 rounded transition shadow-sm"
+                                        >
+                                            <i className="fa-solid fa-plus mr-1"></i>新增模組
+                                        </button>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="text-xs text-slate-500 hover:text-rose-600 px-1"
+                                            title="登出"
+                                        >
+                                            <i className="fa-solid fa-right-from-bracket"></i>
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => setShowLoginModal(true)}
+                                        className="bg-slate-800 hover:bg-slate-900 text-white text-sm px-4 py-1.5 rounded-lg shadow transition flex items-center space-x-1.5"
+                                    >
+                                        <i className="fa-solid fa-lock text-xs"></i>
+                                        <span>教師登入</span>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* 主要內容區域 (自然往下排序) */}
+                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-12">
+                        {modules.length === 0 && (
+                            <div className="text-center py-20 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                                <p className="text-slate-500">目前尚無課程模組，請教師登入後點擊「新增模組」。</p>
+                            </div>
+                        )}
+
+                        {modules.map((mod, index) => (
+                            <section
+                                key={mod.id}
+                                id={mod.id}
+                                className="bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden transition-all hover:shadow-lg relative"
+                            >
+                                {/* 模組頂部標題列 */}
+                                <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
+                                    <div className="flex-1 mr-4">
+                                        {currentUser ? (
+                                            <input
+                                                type="text"
+                                                value={mod.weekTitle}
+                                                onChange={(e) => handleUpdateModule(mod.id, 'weekTitle', e.target.value)}
+                                                className="w-full font-bold text-lg text-indigo-900 bg-white border border-slate-300 rounded px-2 py-1 focus:ring-2 focus:ring-indigo-500"
+                                            />
+                                        ) : (
+                                            <h2 className="font-bold text-lg text-slate-800 flex items-center">
+                                                <span className="bg-indigo-100 text-indigo-700 text-xs px-2.5 py-0.5 rounded-full mr-2">
+                                                    模組 {index + 1}
+                                                </span>
+                                                {mod.weekTitle}
+                                            </h2>
+                                        )}
+                                    </div>
+
+                                    {currentUser && (
+                                        <button
+                                            onClick={() => handleDeleteModule(mod.id)}
+                                            className="text-rose-500 hover:text-rose-700 text-sm px-2 py-1 rounded hover:bg-rose-50"
+                                            title="刪除此模組"
+                                        >
+                                            <i className="fa-solid fa-trash-can mr-1"></i>刪除模組
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* 內容雙欄配置：左側教材，右側課程說明與任務 */}
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
+                                    
+                                    {/* 【左側】：嵌入教材區 (7 欄) */}
+                                    <div className="lg:col-span-7 flex flex-col space-y-3">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                                <i className="fa-solid fa-book-open mr-1.5 text-indigo-500"></i>核心教材內容
+                                            </span>
+                                            <button
+                                                onClick={() => setPreviewUrl(mod.materialUrl)}
+                                                className="text-xs bg-slate-100 hover:bg-indigo-50 text-indigo-600 border border-indigo-200 px-2.5 py-1 rounded transition flex items-center space-x-1"
+                                            >
+                                                <i className="fa-solid fa-expand"></i>
+                                                <span>全螢幕/放大顯示</span>
+                                            </button>
+                                        </div>
+
+                                        {/* 教材網址編輯框 (僅教師顯示) */}
+                                        {currentUser && (
+                                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-xs space-y-1">
+                                                <label className="font-medium text-amber-800">編輯核心教材網址 (Canva / Google / PDF 內嵌網址):</label>
+                                                <input
+                                                    type="text"
+                                                    value={mod.materialUrl}
+                                                    onChange={(e) => handleUpdateModule(mod.id, 'materialUrl', e.target.value)}
+                                                    placeholder="貼上嵌入連結..."
+                                                    className="w-full bg-white border border-amber-300 rounded px-2 py-1 font-mono text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* 嵌入視窗 Containers */}
+                                        <div className="w-full h-[360px] bg-slate-100 rounded-xl overflow-hidden border border-slate-200 shadow-inner relative group">
+                                            <iframe
+                                                src={mod.materialUrl}
+                                                className="w-full h-full border-0"
+                                                title={`Material for ${mod.weekTitle}`}
+                                                allowFullScreen
+                                            ></iframe>
+                                        </div>
+                                    </div>
+
+                                    {/* 【右側】：週進度課程說明與任務按鈕 (5 欄) */}
+                                    <div className="lg:col-span-5 flex flex-col justify-between space-y-6">
+                                        
+                                        {/* 上半：課程說明 (50字內) 與任務按鈕 */}
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                                        <i className="fa-solid fa-bullseye mr-1.5 text-rose-500"></i>週進度課程說明 & 任務
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400">50字內簡述</span>
+                                                </div>
+
+                                                {currentUser ? (
+                                                    <textarea
+                                                        rows="3"
+                                                        value={mod.description}
+                                                        onChange={(e) => handleUpdateModule(mod.id, 'description', e.target.value)}
+                                                        className="w-full border border-slate-300 rounded-lg p-2.5 text-sm leading-relaxed text-slate-700 focus:ring-2 focus:ring-indigo-500"
+                                                        placeholder="請輸入活動內涵與表現任務..."
+                                                    />
+                                                ) : (
+                                                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm leading-relaxed text-slate-700">
+                                                        {mod.description}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* 任務按紐列表 */}
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-xs font-medium text-slate-600">學生表現任務鏈結：</span>
+                                                    {currentUser && (
+                                                        <button
+                                                            onClick={() => handleAddTask(mod.id)}
+                                                            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                                                        >
+                                                            <i className="fa-solid fa-plus mr-1"></i>新增任務按鈕
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex flex-wrap gap-2">
+                                                    {mod.tasks.map((task) => (
+                                                        <div key={task.id} className="inline-flex items-center">
+                                                            <a
+                                                                href={task.url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-medium px-3 py-1.5 rounded-lg shadow-sm transition flex items-center space-x-1.5"
+                                                            >
+                                                                <span>{task.label}</span>
+                                                                <i className="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-70"></i>
+                                                            </a>
+                                                            {currentUser && (
+                                                                <button
+                                                                    onClick={() => handleDeleteTask(mod.id, task.id)}
+                                                                    className="ml-1 text-slate-400 hover:text-rose-500 text-xs p-1"
+                                                                    title="刪除按鈕"
+                                                                >
+                                                                    <i className="fa-solid fa-xmark"></i>
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                    {mod.tasks.length === 0 && (
+                                                        <span className="text-xs text-slate-400 italic">尚無設定任務按鈕</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 下半：OECE / VALUE 檢核指標 (點擊顯示內涵) */}
+                                        <div className="border-t border-slate-200 pt-4 space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center">
+                                                    <i className="fa-solid fa-clipboard-check mr-1.5 text-emerald-600"></i>
+                                                    VALUE 與 AI 素養指標
+                                                </span>
+                                                {currentUser && (
+                                                    <button
+                                                        onClick={() => setEditingIndicatorModule(mod)}
+                                                        className="text-xs text-indigo-600 hover:underline"
+                                                    >
+                                                        <i className="fa-solid fa-pen-to-square mr-1"></i>修改指標勾選
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* 指標標籤區 */}
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {mod.indicators.map((indId) => {
+                                                    const ind = PRESET_INDICATORS.find(p => p.id === indId);
+                                                    if (!ind) return null;
+                                                    return (
+                                                        <button
+                                                            key={ind.id}
+                                                            onClick={() => setSelectedIndicator(ind)}
+                                                            className={`text-xs px-2.5 py-1 rounded-md border font-medium transition cursor-pointer hover:opacity-80 shadow-sm ${ind.tagColor}`}
+                                                        >
+                                                            <i className="fa-solid fa-circle-info mr-1 text-[10px]"></i>
+                                                            {ind.short}
+                                                        </button>
+                                                    );
+                                                })}
+                                                {mod.indicators.length === 0 && (
+                                                    <span className="text-xs text-slate-400 italic">未對應檢核指標</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </section>
+                        ))}
+                    </main>
+
+                    {/* ===== Modals 視窗區 ===== */}
+
+                    {/* 1. 全螢幕教材預覽 Modal */}
+                    {previewUrl && (
+                        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+                                <div className="bg-slate-800 text-white px-6 py-3 flex justify-between items-center">
+                                    <span className="text-sm font-medium"><i className="fa-solid fa-expand mr-2"></i>教材全螢幕檢核視窗</span>
+                                    <button
+                                        onClick={() => setPreviewUrl(null)}
+                                        className="text-slate-400 hover:text-white text-lg px-2"
+                                    >
+                                        <i className="fa-solid fa-xmark"></i>
+                                    </button>
+                                </div>
+                                <div className="flex-1 bg-slate-900">
+                                    <iframe src={previewUrl} className="w-full h-full border-0" title="Full preview"></iframe>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 2. 指標詳細內涵說明 Modal */}
+                    {selectedIndicator && (
+                        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative">
+                                <button
+                                    onClick={() => setSelectedIndicator(null)}
+                                    className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+                                >
+                                    <i className="fa-solid fa-xmark text-lg"></i>
+                                </button>
+                                <div className="flex items-center space-x-2">
+                                    <span className="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded font-bold">
+                                        VALUE 指標內涵
+                                    </span>
+                                </div>
+                                <h3 className="text-base font-bold text-slate-800">
+                                    {selectedIndicator.title}
+                                </h3>
+                                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-700 leading-relaxed">
+                                    {selectedIndicator.content}
+                                </div>
+                                <div className="text-right">
+                                    <button
+                                        onClick={() => setSelectedIndicator(null)}
+                                        className="bg-slate-800 hover:bg-slate-900 text-white text-xs px-4 py-2 rounded-lg"
+                                    >
+                                        關閉說明
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 3. 教師勾選指標 Modal */}
+                    {editingIndicatorModule && (
+                        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto">
+                                <div className="flex justify-between items-center border-b pb-3">
+                                    <h3 className="font-bold text-slate-800">勾選 VALUE 與 AI 素養指標 - {editingIndicatorModule.weekTitle}</h3>
+                                    <button onClick={() => setEditingIndicatorModule(null)} className="text-slate-400 hover:text-slate-600">
+                                        <i className="fa-solid fa-xmark text-lg"></i>
+                                    </button>
+                                </div>
+                                <div className="space-y-3">
+                                    {PRESET_INDICATORS.map((ind) => {
+                                        const isChecked = editingIndicatorModule.indicators.includes(ind.id);
+                                        return (
+                                            <label
+                                                key={ind.id}
+                                                className={`flex items-start p-3 rounded-xl border cursor-pointer transition ${
+                                                    isChecked ? 'bg-indigo-50 border-indigo-300' : 'bg-white border-slate-200 hover:bg-slate-50'
+                                                }`}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={() => handleToggleIndicator(editingIndicatorModule.id, ind.id)}
+                                                    className="mt-1 h-4 w-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                                                />
+                                                <div className="ml-3">
+                                                    <span className="text-sm font-bold text-slate-800 block">{ind.title}</span>
+                                                    <span className="text-xs text-slate-500">{ind.content}</span>
+                                                </div>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                                <div className="text-right border-t pt-3">
+                                    <button
+                                        onClick={() => setEditingIndicatorModule(null)}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-5 py-2 rounded-lg"
+                                    >
+                                        完成儲存
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 4. 教師登入 Modal */}
+                    {showLoginModal && (
+                        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl relative">
+                                <button
+                                    onClick={() => setShowLoginModal(false)}
+                                    className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+                                >
+                                    <i className="fa-solid fa-xmark text-lg"></i>
+                                </button>
+                                <div className="text-center space-y-1">
+                                    <div className="bg-indigo-100 text-indigo-600 w-12 h-12 rounded-full flex items-center justify-center mx-auto text-xl">
+                                        <i className="fa-solid fa-user-gear"></i>
+                                    </div>
+                                    <h3 className="font-bold text-lg text-slate-800">教師登入編輯管理</h3>
+                                    <p className="text-xs text-slate-500">登入後即可進行課程模組新增與編修</p>
+                                </div>
+
+                                {loginError && (
+                                    <div className="bg-rose-50 border border-rose-200 text-rose-600 text-xs p-2.5 rounded-lg text-center">
+                                        {loginError}
+                                    </div>
+                                )}
+
+                                <form onSubmit={handleLogin} className="space-y-4">
+                                    <div>
+                                        <label className="text-xs font-medium text-slate-700 block mb-1">教師帳號</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={loginForm.username}
+                                            onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+                                            placeholder="請輸入帳號 (例如: t5111)"
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-medium text-slate-700 block mb-1">密碼</label>
+                                        <input
+                                            type="password"
+                                            required
+                                            value={loginForm.password}
+                                            onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                                            placeholder="請輸入密碼"
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                        />
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg text-sm transition shadow-md"
+                                    >
+                                        登入編輯權限
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
