@@ -78,12 +78,10 @@
         function parseEmbedUrl(input) {
             if (!input) return '';
             let raw = input.trim();
-            // 1. 若貼上整段 <iframe src="..."> HTML
             const srcMatch = raw.match(/src=["']([^"']+)["']/);
             if (srcMatch && srcMatch[1]) {
                 raw = srcMatch[1];
             }
-            // 2. 若為 Canva 連結
             if (raw.includes('canva.com/design/')) {
                 const cleanUrl = raw.split('?')[0].split('#')[0];
                 return `${cleanUrl}/view?embed`;
@@ -97,20 +95,21 @@
                 const saved = localStorage.getItem('keelung_course_modules');
                 return saved ? JSON.parse(saved) : DEFAULT_MODULES;
             });
-            const [currentUser, setCurrentUser] = useState(null); // { username: 't5111' }
+            const [currentUser, setCurrentUser] = useState(null);
 
             // Firebase 設定與狀態
             const [firebaseConfig, setFirebaseConfig] = useState(() => {
                 const saved = localStorage.getItem('keelung_firebase_config');
                 return saved ? JSON.parse(saved) : null;
             });
-            const [syncStatus, setSyncStatus] = useState('local'); // 'local', 'syncing', 'synced', 'error'
+            const [syncStatus, setSyncStatus] = useState('local');
             const [toastMsg, setToastMsg] = useState('');
             const dbRef = useRef(null);
 
             // Modals
             const [showLoginModal, setShowLoginModal] = useState(false);
             const [showFirebaseModal, setShowFirebaseModal] = useState(false);
+            const [firebaseInputText, setFirebaseInputText] = useState('');
             const [loginForm, setLoginForm] = useState({ username: '', password: '' });
             const [loginError, setLoginError] = useState('');
 
@@ -128,7 +127,6 @@
                         const db = firebase.database();
                         dbRef.current = db.ref('keelung_115_course');
 
-                        // 監聽即時變動
                         dbRef.current.on('value', (snapshot) => {
                             const data = snapshot.val();
                             if (data && Array.isArray(data)) {
@@ -185,6 +183,38 @@
                     showToast(`🎉 歡迎登入，${username} 老師！現已取得管理編輯權限。`);
                 } else {
                     setLoginError('帳號或密碼錯誤！(試用: t5111 / 24567126)');
+                }
+            };
+
+            // 打開 Firebase 設定時填入預設值
+            const handleOpenFirebaseModal = () => {
+                setFirebaseInputText(firebaseConfig ? JSON.stringify(firebaseConfig, null, 2) : '');
+                setShowFirebaseModal(true);
+            };
+
+            // 儲存 Firebase 設定
+            const handleSaveFirebaseConfig = () => {
+                if (!firebaseInputText.trim()) {
+                    setFirebaseConfig(null);
+                    localStorage.removeItem('keelung_firebase_config');
+                    setShowFirebaseModal(false);
+                    showToast('已清空 Firebase 雲端金鑰，回歸本機儲存模式。');
+                    return;
+                }
+
+                try {
+                    const parsed = JSON.parse(firebaseInputText.trim());
+                    if (!parsed.apiKey || !parsed.databaseURL) {
+                        alert('JSON 內容似乎缺少 apiKey 或 databaseURL，請確認貼入完整的 Config！');
+                        return;
+                    }
+                    setFirebaseConfig(parsed);
+                    localStorage.setItem('keelung_firebase_config', JSON.stringify(parsed));
+                    setShowFirebaseModal(false);
+                    showToast('🎉 已完成 Firebase 雲端金鑰連線！頁面將自動進行即時同步。');
+                    setTimeout(() => window.location.reload(), 800);
+                } catch (err) {
+                    alert('JSON 格式不正確！請務必複製貼上完整含 { ... } 大括號的 JSON 內容。');
                 }
             };
 
@@ -328,7 +358,7 @@
                                             {currentUser.username} 老師
                                         </span>
                                         <button
-                                            onClick={() => setShowFirebaseModal(true)}
+                                            onClick={handleOpenFirebaseModal}
                                             className="text-xs bg-white hover:bg-slate-50 text-slate-600 border border-slate-300 px-2 py-1 rounded shadow-sm"
                                             title="Firebase 雲端設定"
                                         >
@@ -485,7 +515,6 @@
                                                             placeholder="請輸入活動內涵與表現任務 (支援分行與段落)..."
                                                         />
                                                     ) : (
-                                                        /* whitespace-pre-line 確保換行正常顯示 */
                                                         <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm leading-relaxed text-slate-700 whitespace-pre-line shadow-inner">
                                                             {mod.description}
                                                         </div>
@@ -689,29 +718,18 @@
                                 </div>
 
                                 <textarea
-                                    rows="6"
-                                    placeholder='請貼上 Firebase Config JSON 物件，例如：&#10;{&#10;  "apiKey": "AIzaSy...",&#10;  "authDomain": "...",&#10;  "databaseURL": "https://...",&#10;  "projectId": "..."&#10;}'
-                                    value={firebaseConfig ? JSON.stringify(firebaseConfig, null, 2) : ''}
-                                    onChange={(e) => {
-                                        try {
-                                            const parsed = JSON.parse(e.target.value);
-                                            setFirebaseConfig(parsed);
-                                            localStorage.setItem('keelung_firebase_config', JSON.stringify(parsed));
-                                        } catch (err) {
-                                            // 允許自由輸入
-                                        }
-                                    }}
+                                    rows="7"
+                                    placeholder='請直接貼上 Firebase Config 的內容，例如：&#10;{&#10;  "apiKey": "AIzaSy...",&#10;  "authDomain": "...",&#10;  "databaseURL": "https://...",&#10;  "projectId": "..."&#10;}'
+                                    value={firebaseInputText}
+                                    onChange={(e) => setFirebaseInputText(e.target.value)}
                                     className="w-full font-mono text-xs border border-slate-300 rounded-lg p-3 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                                 />
 
                                 <div className="flex justify-between items-center text-xs text-slate-500">
                                     <span>未設定時將自動退回本機儲存模式。</span>
                                     <button
-                                        onClick={() => {
-                                            setShowFirebaseModal(false);
-                                            showToast('已完成 Firebase 金鑰設定！');
-                                        }}
-                                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium"
+                                        onClick={handleSaveFirebaseConfig}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-medium shadow"
                                     >
                                         完成儲存
                                     </button>
