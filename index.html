@@ -5,17 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>來去踅基隆 115 - 課程管理系統儀表板</title>
 
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <!-- React & Babel CDNs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js" crossorigin></script>
     
-    <!-- Firebase SDKs (Compat) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
@@ -26,6 +22,8 @@
             background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
             background-size: 24px 24px;
         }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-pattern text-slate-800 antialiased min-h-screen">
@@ -41,7 +39,6 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // 預設 Firebase 金鑰
         const DEFAULT_FIREBASE_CONFIG = {
             apiKey: "AIzaSyBa54AEZYHLm4CuYJP81b3Ng30pE_XJmws",
             authDomain: "keelung-115-course.firebaseapp.com",
@@ -52,156 +49,152 @@
             appId: "1:720942769713:web:6fab4902da2813afadd710"
         };
 
-        // 完整指標庫 (VALUE V1~V8 + OECD 細項指標 O1.1~O4.4 + 高中國語文 17 項指標)
         const ALL_INDICATORS = [
-            // VALUE 指標
-            { id: 'V1', category: 'VALUE', title: 'V1. 促進社會互動與協同學習 (Vivifying Social Learning)', short: 'VALUE: 促進社會互動', tagColor: 'bg-blue-100 text-blue-800 border-blue-300', content: '【從孤立走向共構】確保科技不造成孤立，而是創造更深度的合作共構與社會互動。防範學生個人封閉或由 AI 徹底取代同儕對話。' },
-            { id: 'V2', category: 'VALUE', title: 'V2. 深化後設認知與防範大腦外包 (Activating Metacognition)', short: 'VALUE: 深化後設認知', tagColor: 'bg-emerald-100 text-emerald-800 border-emerald-300', content: '【拒絕思考代工】引導自我監控，防止學生將思考與批判過程「大腦外包」給 AI。要求提交 Prompt History 對話歷程作為評量核心。' },
-            { id: 'V3', category: 'VALUE', title: 'V3. 評估探究歷程與實質回饋 (Learning through Inquiry & Feedback)', short: 'VALUE: 評估探究歷程', tagColor: 'bg-amber-100 text-amber-800 border-amber-300', content: '【重視歷程，非速求答案】重視教與學的探究思考歷程，評估學生的探究與思考過程，而非僅關注快速求得的單一解答。' },
-            { id: 'V4', category: 'VALUE', title: 'V4. 搭建引導思考的動態鷹架 (Unfolding Guided Scaffolding)', short: 'VALUE: 搭建動態鷹架', tagColor: 'bg-purple-100 text-purple-800 border-purple-300', content: '【引導而非直給解答】動態提供認知支持，調節解題時的認知負荷，陪著學生思考，並隨能力提升使鷹架自然褪除。' },
-            { id: 'V5', category: 'VALUE', title: 'V5. 釐清深層迷思與概念改變 (Eliciting Conceptual Change)', short: 'VALUE: 釐清深層迷思', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '【突破深層認知盲點】透過多模態特徵（視覺化、動態模擬或 AI 強烈視覺化反例），幫助學生突破深層的認知框架與迷思概念。' },
-            { id: 'V6', category: 'VALUE', title: 'V6. 連結真實情境與激發動機 (Embedding in Real Contexts)', short: 'VALUE: 連結真實情境', tagColor: 'bg-teal-100 text-teal-800 border-teal-300', content: '【激發內在學習熱情】賦權學生連結真實世界（如基隆郵輪與觀光發展議題），引發真實且持久的內在學習動力與可遷移性。' },
-            { id: 'V7', category: 'VALUE', title: 'V7. 提供自適應的個人化路徑 (Enabling Adaptive Pathways)', short: 'VALUE: 自適應路徑', tagColor: 'bg-indigo-100 text-indigo-800 border-indigo-300', content: '【打造專屬學習節奏】提供非線性選擇，符合準備度的差異化，培養學生的自主學習能力與學習代理權（Agency）。' },
-            { id: 'V8', category: 'VALUE', title: 'V8. 實踐包容設計與差異化 (Embracing Universal Design)', short: 'VALUE: 實踐包容設計', tagColor: 'bg-orange-100 text-orange-800 border-orange-300', content: '【落實 UDL 服務多元】彈性調整教學內容與產出（如錄音、繪圖、文字、Podcast），滿足不同起點學生的多元需求。' },
+            // VALUE 指標 (V1~V8)
+            { id: 'V1', category: 'VALUE', title: 'V1. 促進社會互動與協同學習', short: 'VALUE: 促進社會互動', tagColor: 'bg-blue-100 text-blue-800 border-blue-300', content: '【從孤立走向共構】確保科技不造成孤立，而是創造更深度的合作共構與社會互動。' },
+            { id: 'V2', category: 'VALUE', title: 'V2. 深化後設認知與防範大腦外包', short: 'VALUE: 深化後設認知', tagColor: 'bg-emerald-100 text-emerald-800 border-emerald-300', content: '【拒絕思考代工】引導自我監控，要求提交 Prompt History 對話歷程作為評量核心。' },
+            { id: 'V3', category: 'VALUE', title: 'V3. 評估探究歷程與實質回饋', short: 'VALUE: 評估探究歷程', tagColor: 'bg-amber-100 text-amber-800 border-amber-300', content: '【重視歷程，非速求答案】評估學生的探究與思考過程，而非僅關注快速求得的解答。' },
+            { id: 'V4', category: 'VALUE', title: 'V4. 搭建引導思考的動態鷹架', short: 'VALUE: 搭建動態鷹架', tagColor: 'bg-purple-100 text-purple-800 border-purple-300', content: '【引導而非直給解答】動態提供認知支持，陪著學生思考並隨能力提升使鷹架褪除。' },
+            { id: 'V5', category: 'VALUE', title: 'V5. 釐清深層迷思與概念改變', short: 'VALUE: 釐清深層迷思', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '【突破深層認知盲點】透過視覺化或動態模擬，幫助學生突破認知框架與迷思概念。' },
+            { id: 'V6', category: 'VALUE', title: 'V6. 連結真實情境與激發動機', short: 'VALUE: 連結真實情境', tagColor: 'bg-teal-100 text-teal-800 border-teal-300', content: '【激發內在學習熱情】賦權學生連結真實世界議題，引發真實且持久的內在學習動力。' },
+            { id: 'V7', category: 'VALUE', title: 'V7. 提供自適應的個人化路徑', short: 'VALUE: 自適應路徑', tagColor: 'bg-indigo-100 text-indigo-800 border-indigo-300', content: '【打造專屬學習節奏】提供非線性選擇，符合差異化需求，培養自主學習代理權。' },
+            { id: 'V8', category: 'VALUE', title: 'V8. 實踐包容設計與差異化', short: 'VALUE: 實踐包容設計', tagColor: 'bg-orange-100 text-orange-800 border-orange-300', content: '【落實 UDL 服務多元】彈性調整教學內容與多元產出，滿足不同起點學生需求。' },
             
-            // OECD AILit 細項指標 (四大領域 19 項細項指標)
-            { id: 'O1.1', category: 'OECD', title: 'OECD 1.1 辨識 AI 在不同情境中的角色與影響', short: 'OECD 1.1 角色影響', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '【辨識日常影響】能識別日常生活中不同型別的 AI，並分析 AI 系統如何塑造個人的信念、選擇、學習與公民行為。' },
-            { id: 'O1.2', category: 'OECD', title: 'OECD 1.2 說明 AI 執行方式並釐清迷思', short: 'OECD 1.2 釐清迷思', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '【非人類工具】理解 AI 是基於模式產出的工具而非人類，能準確描述工具執行方式並向同儕釐清常見的 AI 迷思。' },
-            { id: 'O1.3', category: 'OECD', title: 'OECD 1.3 評估 AI 產出之接受、修訂或拒絕', short: 'OECD 1.3 評估產出', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '【查核與辯證】利用可信來源驗證 AI 產出準確性，嚴格評估並提出支持「接受、修改或拒絕」AI 產出的合理理由。' },
-            { id: 'O1.4', category: 'OECD', title: 'OECD 1.4 檢視預測型 AI 推薦系統的侷限與影響', short: 'OECD 1.4 推薦系統侷限', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '【反思推薦機制】理解 AI 蒐集數據提出建議的機制，分析推薦系統何時有益、何時過於狹隘或限制個人視野。' },
-            { id: 'O1.5', category: 'OECD', title: 'OECD 1.5 比較 AI 系統能源與自然資源消耗', short: 'OECD 1.5 資源消耗', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '【綠色科技視角】認識 AI 運作需消耗電力、硬體與冷卻水資源，評估開發、部署與個人使用選擇對環境的影響。' },
-            { id: 'O1.6', category: 'OECD', title: 'OECD 1.6 說明 AI 如何強化或複製社會偏見', short: 'OECD 1.6 反思社會偏見', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '【公平與非偏見】明白訓練數據集可能帶有偏見，分析偏見數據或分類錯誤的設計如何導致不公平或扭曲的結果。' },
-            { id: 'O1.7', category: 'OECD', title: 'OECD 1.7 分析 AI 使用是否符合倫理原則與人類價值', short: 'OECD 1.7 倫理與價值', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '【以人為本倫理】評估 AI 系統的部署與應用是否符合社會倫理原則、肖像權、隱私權保護與人類福祉價值。' },
+            // OECD AILit 19 項細項指標
+            { id: 'O1.1', category: 'OECD', title: 'OECD 1.1 辨識 AI 在不同情境中的角色與影響', short: 'OECD 1.1 角色影響', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '能識別日常生活中不同型別的 AI，並分析 AI 如何塑造學習與公民行為。' },
+            { id: 'O1.2', category: 'OECD', title: 'OECD 1.2 說明 AI 執行方式並釐清迷思', short: 'OECD 1.2 釐清迷思', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '理解 AI 是基於模式產出的工具，能向同儕釐清常見的 AI 迷思。' },
+            { id: 'O1.3', category: 'OECD', title: 'OECD 1.3 評估 AI 產出之接受、修訂或拒絕', short: 'OECD 1.3 評估產出', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '利用可信來源驗證 AI 產出準確性，提出支持接受、修改或拒絕的合理理由。' },
+            { id: 'O1.4', category: 'OECD', title: 'OECD 1.4 檢視預測型 AI 推薦系統的侷限與影響', short: 'OECD 1.4 推薦系統侷限', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '分析推薦系統何時有益、何時過於狹隘或限制個人視野。' },
+            { id: 'O1.5', category: 'OECD', title: 'OECD 1.5 比較 AI 系統能源與自然資源消耗', short: 'OECD 1.5 資源消耗', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '評估 AI 開發、部署與個人使用選擇對電力與自然環境的影響。' },
+            { id: 'O1.6', category: 'OECD', title: 'OECD 1.6 說明 AI 如何強化或複製社會偏見', short: 'OECD 1.6 反思社會偏見', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '分析偏見數據或分類錯誤的設計如何導致不公平或扭曲的結果。' },
+            { id: 'O1.7', category: 'OECD', title: 'OECD 1.7 分析 AI 使用是否符合倫理原則與人類價值', short: 'OECD 1.7 倫理與價值', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '評估 AI 系統的部署與應用是否符合隱私權保護與人類福祉價值。' },
 
-            { id: 'O2.1', category: 'OECD', title: 'OECD 2.1 使用 AI 探索原創思想的新視角', short: 'OECD 2.1 探索原創視角', tagColor: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300', content: '【擴充思考靈感】探索 AI 如何擴充思考或激發靈感，將個人想法與 AI 建議進行對比辯證，保持獨創性與主體性。' },
-            { id: 'O2.2', category: 'OECD', title: 'OECD 2.2 利用 AI 進行視覺化、原型設計與發想', short: 'OECD 2.2 原型設計發想', tagColor: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300', content: '【多模態共創】實驗不同類型的 AI 生成器（文字/圖像/音樂），透過多輪 Prompting 開發並呈現場景與功能原型。' },
-            { id: 'O2.3', category: 'OECD', title: 'OECD 2.3 引導生成式 AI 獲取回饋並支援自我反思', short: 'OECD 2.3 獲取反饋反思', tagColor: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300', content: '【迭代對話優化】透過精確 Prompt 與 AI 進行多輪對話，評價 AI 反饋並進行自我反思，自主決定採用或調整建議。' },
-            { id: 'O2.4', category: 'OECD', title: 'OECD 2.4 分析 AI 如何保障或侵犯內容真實性與智慧財產權', short: 'OECD 2.4 內容真實與智財', tagColor: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300', content: '【尊重智慧財產】理解 AI 產出可能的版權爭議，適切進行引註與歸屬，在使用 AI 時維持原創真實性並尊重他人創作。' },
+            { id: 'O2.1', category: 'OECD', title: 'OECD 2.1 使用 AI 探索原創思想的新視角', short: 'OECD 2.1 探索原創視角', tagColor: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300', content: '探索 AI 如何擴充思考靈感，與 AI 進行對比辯證並保持獨創性。' },
+            { id: 'O2.2', category: 'OECD', title: 'OECD 2.2 利用 AI 進行視覺化、原型設計與發想', short: 'OECD 2.2 原型設計發想', tagColor: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300', content: '實驗不同類型 AI 生成器（文字/圖像/音樂），開發並呈現場景原型。' },
+            { id: 'O2.3', category: 'OECD', title: 'OECD 2.3 引導生成式 AI 獲取回饋並支援自我反思', short: 'OECD 2.3 獲取反饋反思', tagColor: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300', content: '透過精確 Prompt 與 AI 多輪對話，評價 AI 反饋並自主決定調整。' },
+            { id: 'O2.4', category: 'OECD', title: 'OECD 2.4 分析 AI 如何保障或侵犯真實性與智財權', short: 'OECD 2.4 內容真實與智財', tagColor: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300', content: '理解 AI 產出的版權爭議，適切進行引註，維持原創真實性。' },
 
-            { id: 'O3.1', category: 'OECD', title: 'OECD 3.1 根據任務性質決定是否使用 AI', short: 'OECD 3.1 意圖性使用選擇', tagColor: 'bg-cyan-100 text-cyan-800 border-cyan-300', content: '【合宜工具選擇】理解 AI 局限性，決定 AI 是否為執行特定任務的合適工具，明確劃分「AI 協助」與「人類獨立」範疇。' },
-            { id: 'O3.2', category: 'OECD', title: 'OECD 3.2 比較不同 AI 運作機制並選擇適當方法', short: 'OECD 3.2 機制比較選擇', tagColor: 'bg-cyan-100 text-cyan-800 border-cyan-300', content: '【分析技術特性】區分基於規則的方法與機器學習演算法的優缺點，根據情境、數據品質與預期成果選擇最佳方法。' },
-            { id: 'O3.3', category: 'OECD', title: 'OECD 3.3 解析問題結構進行人機分工與自動化', short: 'OECD 3.3 人機意圖分工', tagColor: 'bg-cyan-100 text-cyan-800 border-cyan-300', content: '【問題結構拆解】將複雜問題分解，分別指派給人類（批判判斷、情感與領域知識）與 AI（資料整理、結構自動化）。' },
-            { id: 'O3.4', category: 'OECD', title: 'OECD 3.4 在解題歷程中全程監測與評估 AI 使用', short: 'OECD 3.4 全程監測評估', tagColor: 'bg-cyan-100 text-cyan-800 border-cyan-300', content: '【掌控最終責任】在專案中設立檢查點，當 AI 產出偏離目標、出現幻覺或偏見時，能主動介入並重定向 AI 工作流程。' },
+            { id: 'O3.1', category: 'OECD', title: 'OECD 3.1 根據任務性質決定是否使用 AI', short: 'OECD 3.1 意圖性使用選擇', tagColor: 'bg-cyan-100 text-cyan-800 border-cyan-300', content: '理解 AI 局限性，明確劃分「AI 協助」與「人類獨立」範疇。' },
+            { id: 'O3.2', category: 'OECD', title: 'OECD 3.2 比較不同 AI 運作機制並選擇適當方法', short: 'OECD 3.2 機制比較選擇', tagColor: 'bg-cyan-100 text-cyan-800 border-cyan-300', content: '區分規則型與機器學習方法，根據情境與數據品質選擇最佳工具。' },
+            { id: 'O3.3', category: 'OECD', title: 'OECD 3.3 解析問題結構進行人機分工與自動化', short: 'OECD 3.3 人機意圖分工', tagColor: 'bg-cyan-100 text-cyan-800 border-cyan-300', content: '拆解問題，分別指派給人類（批判情感領域）與 AI（數據自動化）。' },
+            { id: 'O3.4', category: 'OECD', title: 'OECD 3.4 在解題歷程中全程監測與評估 AI 使用', short: 'OECD 3.4 全程監測評估', tagColor: 'bg-cyan-100 text-cyan-800 border-cyan-300', content: '設立檢查點，當 AI 產出偏離目標或出現幻覺時主動介入重定向。' },
 
-            { id: 'O4.1', category: 'OECD', title: 'OECD 4.1 調查 AI 系統運作、設計對象與局限性', short: 'OECD 4.1 系統局限調查', tagColor: 'bg-violet-100 text-violet-800 border-violet-300', content: '【解析系統邊界】識別並說明不同 AI 系統的設計目的、預期使用者、輸入數據限制，評估其優勢與情境局限性。' },
-            { id: 'O4.2', category: 'OECD', title: 'OECD 4.2 利用界定標準與測試案例評價 AI 系統', short: 'OECD 4.2 界定標準評價', tagColor: 'bg-violet-100 text-violet-800 border-violet-300', content: '【系統效能評價】定義明確標準與測試案例，評價 AI 系統的效能與準確度，並向開發或合作夥伴提出具體改進建議。' },
-            { id: 'O4.3', category: 'OECD', title: 'OECD 4.3 設計 AI 時注意資料來源如何影響輸出', short: 'OECD 4.3 資料來源影響', tagColor: 'bg-violet-100 text-violet-800 border-violet-300', content: '【數據源頭追溯】評估訓練數據集的屬性（規模、多樣性、偏差），探討數據源頭如何改變 AI 系統的最終建議與行為。' },
-            { id: 'O4.4', category: 'OECD', title: 'OECD 4.4 改進 AI 系統以促進人類福祉與社會效益', short: 'OECD 4.4 促進社會福祉', tagColor: 'bg-violet-100 text-violet-800 border-violet-300', content: '【包容與福祉設計】針對特定 AI 工具提出設計修訂建議，確保具備不同需求的人都能獲得支持，使 AI 服務社會福祉。' },
+            { id: 'O4.1', category: 'OECD', title: 'OECD 4.1 調查 AI 系統運作、設計對象與局限性', short: 'OECD 4.1 系統局限調查', tagColor: 'bg-violet-100 text-violet-800 border-violet-300', content: '說明 AI 系統的設計目的與輸入限制，評估其優勢與局限性。' },
+            { id: 'O4.2', category: 'OECD', title: 'OECD 4.2 利用界定標準與測試案例評價 AI 系統', short: 'OECD 4.2 界定標準評價', tagColor: 'bg-violet-100 text-violet-800 border-violet-300', content: '定義明確標準與測試案例，評價 AI 效能並提出具體改進建議。' },
+            { id: 'O4.3', category: 'OECD', title: 'OECD 4.3 設計 AI 時注意資料來源如何影響輸出', short: 'OECD 4.3 資料來源影響', tagColor: 'bg-violet-100 text-violet-800 border-violet-300', content: '探討數據源頭屬性（規模、偏差）如何改變 AI 系統的行為。' },
+            { id: 'O4.4', category: 'OECD', title: 'OECD 4.4 改進 AI 系統以促進人類福祉與社會效益', short: 'OECD 4.4 促進社會福祉', tagColor: 'bg-violet-100 text-violet-800 border-violet-300', content: '針對 AI 工具提出包容設計建議，確保使 AI 服務社會福祉。' },
 
-            // 國語文 學習表現指標
+            // 國語文 學習表現指標 (17項)
             { id: 'C1V1', category: '國語文', title: '國語文 1-V-1 聆聽態度與資訊擷取', short: '國語文 1-V-1', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '能養成良好的聆聽態度，擷取完整資訊。' },
             { id: 'C1V2', category: '國語文', title: '國語文 1-V-2 聆聽反思與問題思辨', short: '國語文 1-V-2', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '能從聆聽中，釐清自我認知，啟發解決問題的思辨能力。' },
             { id: 'C1V3', category: '國語文', title: '國語文 1-V-3 掌握核心內容與溝通', short: '國語文 1-V-3', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '能適切掌握講者的核心內容，增進溝通能力。' },
             { id: 'C1V4', category: '國語文', title: '國語文 1-V-4 結合科技提升聆聽效果', short: '國語文 1-V-4', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '能結合科技與資訊，提升聆聽學習的效果。' },
 
-            { id: 'C2V1', category: '國語文', title: '國語文 2-V-1 口語表達與合宜應對', short: '國語文 2-V-1', tagColor: 'bg-pink-100 text-pink-800 border-pink-300', content: '能清楚瞭解說話的目的、對象、場合，恰如其分的表達。' },
-            { id: 'C2V2', category: '國語文', title: '國語文 2-V-2 語氣表情與情感渲染', short: '國語文 2-V-2', tagColor: 'bg-pink-100 text-pink-800 border-pink-300', content: '能運用合宜的表情和語氣，呈現內心情感，使表達內容具有感染力和說服力。' },
-            { id: 'C2V3', category: '國語文', title: '國語文 2-V-3 條理組織與觀點表達', short: '國語文 2-V-3', tagColor: 'bg-pink-100 text-pink-800 border-pink-300', content: '能選擇適當的語辭，透過表情、肢體語言的組織技巧，條理清晰的表達個人觀點。' },
-            { id: 'C2V4', category: '國語文', title: '國語文 2-V-4 電子科技與口頭發表', short: '國語文 2-V-4', tagColor: 'bg-pink-100 text-pink-800 border-pink-300', content: '能利用電子科技，統整訊息的內容，作詳細的口頭報告、發表評論或演說。' },
+            { id: 'C2V1', category: '國語文', title: '國語文 2-V-1 口語表達與合宜應對', short: '國語文 2-V-1', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '能清楚瞭解說話的目的、對象、場合，恰如其分的表達。' },
+            { id: 'C2V2', category: '國語文', title: '國語文 2-V-2 語氣表情與情感渲染', short: '國語文 2-V-2', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '能運用合宜的表情和語氣，呈現內心情感，使表達內容具有感染力和說服力。' },
+            { id: 'C2V3', category: '國語文', title: '國語文 2-V-3 條理組織與觀點表達', short: '國語文 2-V-3', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '能選擇適當的語辭，透過表情、肢體語言的組織技巧，條理清晰的表達個人觀點。' },
+            { id: 'C2V4', category: '國語文', title: '國語文 2-V-4 電子科技與口頭發表', short: '國語文 2-V-4', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '能利用電子科技，統整訊息的內容，作詳細的口頭報告、發表評論或演說。' },
 
-            { id: 'C4V1', category: '國語文', title: '國語文 4-V-1 儲備識字量與自主學習', short: '國語文 4-V-1', tagColor: 'bg-red-100 text-red-800 border-red-300', content: '能因應日常或文化接觸，透過自主學習儲備識字量。' },
-            { id: 'C4V2', category: '國語文', title: '國語文 4-V-2 字型認知與書寫應用', short: '國語文 4-V-2', tagColor: 'bg-red-100 text-red-800 border-red-300', content: '能具備文字結構、書體字型的認知，應用於書寫需求。' },
+            { id: 'C4V1', category: '國語文', title: '國語文 4-V-1 儲備識字量與自主學習', short: '國語文 4-V-1', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '能因應日常或文化接觸，透過自主學習儲備識字量。' },
+            { id: 'C4V2', category: '國語文', title: '國語文 4-V-2 字型認知與書寫應用', short: '國語文 4-V-2', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '能具備文字結構、書體字型的認知，應用於書寫需求。' },
 
-            { id: 'C5V1', category: '國語文', title: '國語文 5-V-1 閱讀興趣與擴展視野', short: '國語文 5-V-1', tagColor: 'bg-orange-100 text-orange-800 border-orange-300', content: '能養成閱讀的興趣，建立良好的學習態度，擴展閱讀視野。' },
-            { id: 'C5V2', category: '國語文', title: '國語文 5-V-2 篇章結構與博學思辨', short: '國語文 5-V-2', tagColor: 'bg-orange-100 text-orange-800 border-orange-300', content: '能認識文章的各種表述方式、主旨、取材、結構及作者的生命態度，增進思辨與博學的能力。' },
-            { id: 'C5V3', category: '國語文', title: '國語文 5-V-3 獨立閱讀與當代議題', short: '國語文 5-V-3', tagColor: 'bg-orange-100 text-orange-800 border-orange-300', content: '能運用獨立閱讀的能力，欣賞及應用各種文學作品、文字資訊，掌握當代課題。' },
-            { id: 'C5V4', category: '國語文', title: '國語文 5-V-4 電腦科技與語文互動', short: '國語文 5-V-4', tagColor: 'bg-orange-100 text-orange-800 border-orange-300', content: '能結合電腦科技，提高語文表達與資訊互動的應用與解決能力。' },
+            { id: 'C5V1', category: '國語文', title: '國語文 5-V-1 閱讀興趣與擴展視野', short: '國語文 5-V-1', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '能養成閱讀的興趣，建立良好的學習態度，擴展閱讀視野。' },
+            { id: 'C5V2', category: '國語文', title: '國語文 5-V-2 篇章結構與博學思辨', short: '國語文 5-V-2', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '能認識文章的表述方式、主旨、結構及作者生命態度，增進思辨博學能力。' },
+            { id: 'C5V3', category: '國語文', title: '國語文 5-V-3 獨立閱讀與當代議題', short: '國語文 5-V-3', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '能運用獨立閱讀能力，欣賞文學作品、文字資訊，掌握當代課題。' },
+            { id: 'C5V4', category: '國語文', title: '國語文 5-V-4 電腦科技與語文互動', short: '國語文 5-V-4', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '能結合電腦科技，提高語文表達與資訊互動的應用與解決能力。' },
 
-            { id: 'C6V1', category: '國語文', title: '國語文 6-V-1 寫作觀摩與人文美感', short: '國語文 6-V-1', tagColor: 'bg-amber-100 text-amber-800 border-amber-300', content: '能經由觀摩、分享與欣賞，養成良好的寫作態度與興趣，增加人文美感素養。' },
-            { id: 'C6V2', category: '國語文', title: '國語文 6-V-2 創造思考與風格展現', short: '國語文 6-V-2', tagColor: 'bg-amber-100 text-amber-800 border-amber-300', content: '能發揮思考與創造的能力，整理並記錄個人生命經驗，展現具有風格與價值觀的作品。' },
-            { id: 'C6V3', category: '國語文', title: '國語文 6-V-3 流暢文字與職場應用', short: '國語文 6-V-3', tagColor: 'bg-amber-100 text-amber-800 border-amber-300', content: '能使用流暢、優美的文字寫作，提昇語文在生活與職場的應用能力。' },
-            { id: 'C6V4', category: '國語文', title: '國語文 6-V-4 電腦編輯與成果分享', short: '國語文 6-V-4', tagColor: 'bg-amber-100 text-amber-800 border-amber-300', content: '能使用電腦編輯作品，透過寫作分享生活、學習和專業成長的多元經驗。' }
+            { id: 'C6V1', category: '國語文', title: '國語文 6-V-1 寫作觀摩與人文美感', short: '國語文 6-V-1', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '能經由觀摩、分享與欣賞，養成良好的寫作態度與興趣，增加人文美感。' },
+            { id: 'C6V2', category: '國語文', title: '國語文 6-V-2 創造思考與風格展現', short: '國語文 6-V-2', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '能發揮思考與創造的能力，整理記錄生命經驗，展現具風格的作品。' },
+            { id: 'C6V3', category: '國語文', title: '國語文 6-V-3 流暢文字與職場應用', short: '國語文 6-V-3', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '能使用流暢、優美的文字寫作，提昇語文在生活與職場的應用能力。' },
+            { id: 'C6V4', category: '國語文', title: '國語文 6-V-4 電腦編輯與成果分享', short: '國語文 6-V-4', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '能使用電腦編輯作品，透過寫作分享生活與專業成長經驗。' }
         ];
 
-        // 預設示範模組內容 (支援多教材頁籤)
         const DEFAULT_MODULES = [
             {
                 id: 'mod-1',
                 weekTitle: '第 1 週：課程說明與破冰遊戲',
                 materials: [
-                    { id: 'm1', name: '📄 核心課程簡報', url: 'https://docs.google.com/presentation/d/1dFpb5V70RYVoGXNqb-GKAHEIWJdgzW7kNOZBoXtqBEU/embed' },
-                    { id: 'm2', name: '🗺️ 踏查學習單', url: 'https://docs.google.com/document/d/1dFpb5V70RYVoGXNqb-GKAHEIWJdgzW7kNOZBoXtqBEU/preview' }
+                    { id: 'm1', name: '📄 核心課程簡報', url: 'https://docs.google.com/presentation/d/1dFpb5V70RYVoGXNqb-GKAHEIWJdgzW7kNOZBoXtqBEU/embed', mode: 'embed' },
+                    { id: 'm2', name: '🌍 3D 地球巡航', url: 'https://earth.google.com/web/@25.118621,121.75801729,135a,8744d/data=CgRCAggB', mode: 'external' }
                 ],
-                description: '課程說明：本課程為 AI 協作與人文地理數位敘事，認識基隆在地文史資源並實地踏查。\n\n課程要求：\n1. 準時到課，每週完成課堂任務。\n2. 攜帶手機，負責任地使用 AI。\n3. 保持開放且愉悅的心情來冒險。',
+                description: '課程說明：本課程為 AI 協作與人文地理數位敘事，認識基隆在地文史資源。\n\n課程要求：\n1. 準時到課，完成課堂任務。\n2. 負責任地使用 AI 協助思考。',
                 tasks: [
                     { id: 't1', label: '🕹️ Pikmin 破冰遊戲', url: 'https://pikminbloom.com' },
                     { id: 't2', label: '📄 學習歷程回饋單', url: 'https://forms.google.com' }
                 ],
                 indicators: ['V1', 'V6', 'O1.1', 'O1.3', 'C1V1', 'C2V4']
-            },
-            {
-                id: 'mod-2',
-                weekTitle: '第 8-9 週：地理資訊與人機協作模式',
-                materials: [
-                    { id: 'm3', name: '📄 人機協作簡報', url: 'https://docs.google.com/presentation/d/1dFpb5V70RYVoGXNqb-GKAHEIWJdgzW7kNOZBoXtqBEU/embed' }
-                ],
-                description: '建構照片地理說明，練習「人先寫 ➔ AI 描繪 ➔ 人終審」之負責任協作流程。\n\n評量核心：\n確實繳交與 AI 討論之完整對話歷程 (Prompt History)，證明具備獨立批判能力。',
-                tasks: [
-                    { id: 't3', label: '💭 上傳對話紀錄 (Prompt History)', url: 'https://forms.google.com' },
-                    { id: 't4', label: '🗺️ 地理資訊表單', url: 'https://maps.google.com' }
-                ],
-                indicators: ['V2', 'V3', 'V4', 'O3.1', 'O3.3', 'C5V4', 'C6V4']
             }
         ];
 
-        // 智慧網址解析器 (解決 Canva 與 Google 簡報內嵌問題)
-        function parseEmbedUrl(input) {
-            if (!input) return '';
+        function parseEmbedUrl(input, customMode) {
+            if (!input) return { type: 'empty', url: '', mode: 'embed' };
             let raw = input.trim();
             
-            // 1. 若貼上 HTML 嵌入碼 (<iframe src="...">)
+            if (raw.includes('earth.google.com')) {
+                return { type: 'earth', url: raw, mode: customMode || 'external' };
+            }
+
             const srcMatch = raw.match(/src=["']([^"']+)["']/);
             if (srcMatch && srcMatch[1]) {
                 raw = srcMatch[1];
             }
             
-            // 2. Canva 網址處理
             if (raw.includes('canva.com/design/')) {
                 let cleanUrl = raw.split('?')[0].split('#')[0];
                 while (cleanUrl.endsWith('/view')) {
                     cleanUrl = cleanUrl.slice(0, -5);
                 }
-                return `${cleanUrl}/view?embed`;
+                return { type: 'iframe', url: `${cleanUrl}/view?embed`, mode: customMode || 'embed' };
             }
 
-            // 3. Google 簡報處理
             if (raw.includes('docs.google.com/presentation/d/')) {
                 let baseUrl = raw.split('/edit')[0].split('/view')[0].split('/pub')[0].split('/embed')[0];
-                return `${baseUrl}/embed?start=false&loop=false&delayms=3000`;
+                return { type: 'iframe', url: `${baseUrl}/embed?start=false&loop=false&delayms=3000`, mode: customMode || 'embed' };
             }
 
-            // 4. Google 文件處理
             if (raw.includes('docs.google.com/document/d/')) {
                 let baseUrl = raw.split('/edit')[0].split('/view')[0].split('/preview')[0];
-                return `${baseUrl}/preview`;
+                return { type: 'iframe', url: `${baseUrl}/preview`, mode: customMode || 'embed' };
             }
 
-            // 5. Google Drive PDF 檔案處理
             if (raw.includes('drive.google.com/file/d/')) {
                 let baseUrl = raw.split('/view')[0].split('/edit')[0];
-                return `${baseUrl}/preview`;
+                return { type: 'iframe', url: `${baseUrl}/preview`, mode: customMode || 'embed' };
             }
 
-            return raw;
+            return { type: 'iframe', url: raw, mode: customMode || 'embed' };
         }
 
         function App() {
-            // 自動向上相容舊版單一教材格式
+            const migrateData = (rawList) => {
+                if (!Array.isArray(rawList)) return DEFAULT_MODULES;
+                return rawList.map(m => {
+                    let materials = m.materials;
+                    if (!materials || !Array.isArray(materials) || materials.length === 0) {
+                        materials = [{ id: `mat-migrated-${Date.now()}`, name: '📄 核心教材', url: m.materialUrl || '', mode: 'embed' }];
+                    } else {
+                        materials = materials.map(mat => ({
+                            ...mat,
+                            mode: mat.mode || (mat.url && mat.url.includes('earth.google.com') ? 'external' : 'embed')
+                        }));
+                    }
+                    return {
+                        ...m,
+                        weekTitle: m.weekTitle || '未命名課程模組',
+                        description: m.description || '',
+                        tasks: Array.isArray(m.tasks) ? m.tasks : [],
+                        indicators: Array.isArray(m.indicators) ? m.indicators : [],
+                        materials: materials
+                    };
+                });
+            };
+
             const [modules, setModules] = useState(() => {
                 const saved = localStorage.getItem('keelung_course_modules');
-                let parsed = saved ? JSON.parse(saved) : DEFAULT_MODULES;
-                return parsed.map(m => {
-                    if (!m.materials && m.materialUrl) {
-                        return {
-                            ...m,
-                            materials: [{ id: `mat-legacy-${Date.now()}`, name: '📄 核心教材內容', url: m.materialUrl }]
-                        };
-                    }
-                    if (!m.materials) {
-                        m.materials = [{ id: `mat-${Date.now()}`, name: '📄 預設教材', url: '' }];
-                    }
-                    return m;
-                });
+                if (saved) {
+                    try { return migrateData(JSON.parse(saved)); } catch (e) { }
+                }
+                return DEFAULT_MODULES;
             });
 
             const [currentUser, setCurrentUser] = useState(null);
@@ -209,145 +202,102 @@
             const [toastMsg, setToastMsg] = useState('');
             const dbRef = useRef(null);
 
-            // 當前各模組被選中的教材頁籤 Index
             const [activeMaterialTabs, setActiveMaterialTabs] = useState({});
+            const [editingTaskModal, setEditingTaskModal] = useState(null);
+            const [editingIndicatorsModal, setEditingIndicatorsModal] = useState(null);
+            const [loginModalOpen, setLoginModalOpen] = useState(false);
 
-            // Modals 狀態
-            const [showLoginModal, setShowLoginModal] = useState(false);
-            const [loginForm, setLoginForm] = useState({ username: '', password: '' });
-            const [loginError, setLoginError] = useState('');
-
-            const [previewUrl, setPreviewUrl] = useState(null);
-            const [selectedIndicator, setSelectedIndicator] = useState(null);
-            const [editingIndicatorModule, setEditingIndicatorModule] = useState(null);
-
-            // 編輯任務按鈕 Modal State
-            const [editingTaskModal, setEditingTaskModal] = useState(null); // { moduleId, task } or { moduleId, isNew: true }
-
-            // 連線 Firebase
             useEffect(() => {
                 try {
                     if (!firebase.apps.length) {
                         firebase.initializeApp(DEFAULT_FIREBASE_CONFIG);
                     }
                     const db = firebase.database();
-                    dbRef.current = db.ref('keelung_115_course');
+                    dbRef.current = db.ref('course_dashboard_data');
 
                     dbRef.current.on('value', (snapshot) => {
-                        const data = snapshot.val();
-                        if (data && Array.isArray(data) && data.length > 0) {
-                            const upgraded = data.map(m => {
-                                if (!m.materials && m.materialUrl) {
-                                    return {
-                                        ...m,
-                                        materials: [{ id: `mat-legacy-${Date.now()}`, name: '📄 核心教材內容', url: m.materialUrl }]
-                                    };
-                                }
-                                return m;
-                            });
-                            setModules(upgraded);
-                            localStorage.setItem('keelung_course_modules', JSON.stringify(upgraded));
+                        const val = snapshot.val();
+                        if (val && Array.isArray(val) && val.length > 0) {
+                            const migrated = migrateData(val);
+                            setModules(migrated);
+                            localStorage.setItem('keelung_course_modules', JSON.stringify(migrated));
                         }
                         setIsCloudConnected(true);
                     }, (err) => {
-                        console.error('Firebase 讀取失敗:', err);
+                        console.warn("Firebase 讀取提示:", err.message);
                         setIsCloudConnected(false);
                     });
-                } catch (err) {
-                    console.error('Firebase 初始化錯誤:', err);
+                } catch (e) {
+                    console.warn("Firebase 初始化模式:", e);
                     setIsCloudConnected(false);
                 }
             }, []);
 
             const showToast = (msg) => {
                 setToastMsg(msg);
-                setTimeout(() => setToastMsg(''), 3500);
+                setTimeout(() => setToastMsg(''), 3000);
             };
 
-            // 儲存變更
-            const saveAllModules = (newModules, manualNotify = false) => {
-                setModules(newModules);
-                localStorage.setItem('keelung_course_modules', JSON.stringify(newModules));
+            const saveAllModules = (nextModules, customToastText = null) => {
+                setModules(nextModules);
+                localStorage.setItem('keelung_course_modules', JSON.stringify(nextModules));
 
-                if (dbRef.current) {
-                    dbRef.current.set(newModules)
-                        .then(() => {
-                            showToast('✨ 已成功儲存並同步至雲端資料庫！全世界手機皆已更新。');
-                        })
-                        .catch((err) => {
-                            console.error(err);
-                            showToast('⚠️ 本機儲存成功，但雲端同步失敗（請檢查網路連線）。');
-                        });
+                if (dbRef.current && isCloudConnected) {
+                    dbRef.current.set(nextModules).then(() => {
+                        showToast(customToastText || '✨ 雲端發布儲存成功！');
+                    }).catch(() => {
+                        showToast(customToastText || '💾 已儲存至本機快取');
+                    });
                 } else {
-                    if (manualNotify) {
-                        showToast('💾 已儲存至此電腦快取！');
+                    showToast(customToastText || '💾 已儲存至本機快取');
+                }
+            };
+
+            // 獨立儲存單一週次模組
+            const saveSingleModule = (moduleId) => {
+                const targetMod = modules.find(m => m.id === moduleId);
+                const title = targetMod ? targetMod.weekTitle : '當週模組';
+                saveAllModules(modules, `✨ 已成功獨立儲存：${title}`);
+            };
+
+            const handleReorderMaterials = (moduleId, dragIdx, dropIdx) => {
+                if (dragIdx === dropIdx || dragIdx < 0 || dropIdx < 0) return;
+                const updated = modules.map(m => {
+                    if (m.id === moduleId) {
+                        const nextMats = [...(m.materials || [])];
+                        const [removed] = nextMats.splice(dragIdx, 1);
+                        nextMats.splice(dropIdx, 0, removed);
+                        return { ...m, materials: nextMats };
                     }
-                }
+                    return m;
+                });
+                saveAllModules(updated, '✨ 頁籤順序已儲存！');
+                setActiveMaterialTabs({ ...activeMaterialTabs, [moduleId]: dropIdx });
             };
 
-            const handleLogin = (e) => {
-                e.preventDefault();
-                const { username, password } = loginForm;
-                if ((username === 't5111' || username === 't5125') && password === '24567126') {
-                    setCurrentUser({ username });
-                    setShowLoginModal(false);
-                    setLoginForm({ username: '', password: '' });
-                    setLoginError('');
-                    showToast(`🎉 歡迎登入，${username} 老師！已取得管理編輯權限。`);
-                } else {
-                    setLoginError('帳號或密碼錯誤！(測試: t5111 / 24567126)');
-                }
+            const handleMoveMaterialTab = (moduleId, currentIdx, direction) => {
+                const targetIdx = currentIdx + direction;
+                const mod = modules.find(m => m.id === moduleId);
+                if (!mod || targetIdx < 0 || targetIdx >= mod.materials.length) return;
+                handleReorderMaterials(moduleId, currentIdx, targetIdx);
             };
 
-            // 模組增刪與編輯
-            const handleAddModule = () => {
-                const newId = `mod-${Date.now()}`;
-                const newModule = {
-                    id: newId,
-                    weekTitle: `第 ${modules.length + 1} 模組：新課程進度主題`,
-                    materials: [
-                        { id: `mat-${Date.now()}`, name: '📄 核心簡報', url: 'https://docs.google.com/presentation/d/1dFpb5V70RYVoGXNqb-GKAHEIWJdgzW7kNOZBoXtqBEU/embed' }
-                    ],
-                    description: '課程說明：請在此輸入本週課程活動簡述...\n\n表現任務：請在此說明學生應完成之目標。',
-                    tasks: [
-                        { id: `t-${Date.now()}`, label: '📝 新任務按鈕', url: 'https://google.com' }
-                    ],
-                    indicators: ['V1', 'O1.1', 'C1V1']
-                };
-                const updated = [...modules, newModule];
-                saveAllModules(updated);
-                setTimeout(() => {
-                    document.getElementById(newId)?.scrollIntoView({ behavior: 'smooth' });
-                }, 150);
-            };
-
-            const handleDeleteModule = (id) => {
-                if (confirm('確定要刪除此課程模組嗎？')) {
-                    const updated = modules.filter(m => m.id !== id);
-                    saveAllModules(updated);
-                }
-            };
-
-            const handleUpdateModuleField = (id, field, value) => {
-                const updated = modules.map(m => m.id === id ? { ...m, [field]: value } : m);
-                saveAllModules(updated);
-            };
-
-            // 教材頁籤管理
             const handleAddMaterialTab = (moduleId) => {
-                const name = prompt('請輸入新教材名稱（例如：📝 課堂筆記、🎥 導覽影片）：', '新教材頁籤');
+                const name = prompt('請輸入新教材名稱（例如：📄 核心簡報、🌍 3D地圖）：', '新教材頁籤');
                 if (!name) return;
-                const url = prompt('請貼上教材網址或 HTML 嵌入碼：', 'https://');
+                const url = prompt('請貼上教材網址：', 'https://');
                 if (!url) return;
+
+                const mode = url.includes('earth.google.com') ? 'external' : 'embed';
 
                 const updated = modules.map(m => {
                     if (m.id === moduleId) {
-                        const nextMaterials = [...(m.materials || []), { id: `mat-${Date.now()}`, name, url }];
+                        const nextMaterials = [...(m.materials || []), { id: `mat-${Date.now()}`, name, url, mode }];
                         return { ...m, materials: nextMaterials };
                     }
                     return m;
                 });
-                saveAllModules(updated);
+                saveAllModules(updated, '✨ 已新增教材頁籤！');
             };
 
             const handleUpdateMaterialTab = (moduleId, matId, field, value) => {
@@ -358,7 +308,7 @@
                     }
                     return m;
                 });
-                saveAllModules(updated);
+                setModules(updated);
             };
 
             const handleDeleteMaterialTab = (moduleId, matId) => {
@@ -370,11 +320,16 @@
                         }
                         return m;
                     });
-                    saveAllModules(updated);
+                    saveAllModules(updated, '✨ 已刪除頁籤！');
                 }
             };
 
-            // 任務按鈕管理 (Modal 操作)
+            const handleTaskClickInTeacherMode = (moduleId, task) => {
+                if (currentUser) {
+                    setEditingTaskModal({ moduleId, task, isNew: false });
+                }
+            };
+
             const handleSaveTaskModal = (label, url) => {
                 if (!editingTaskModal) return;
                 const { moduleId, task, isNew } = editingTaskModal;
@@ -391,7 +346,7 @@
                     }
                     return m;
                 });
-                saveAllModules(updated);
+                saveAllModules(updated, '✨ 任務按鈕已儲存！');
                 setEditingTaskModal(null);
             };
 
@@ -406,7 +361,7 @@
                         }
                         return m;
                     });
-                    saveAllModules(updated);
+                    saveAllModules(updated, '✨ 任務按鈕已刪除！');
                     setEditingTaskModal(null);
                 }
             };
@@ -422,90 +377,79 @@
                     }
                     return m;
                 });
-                saveAllModules(updated);
+                setModules(updated);
+            };
+
+            const handleAddModule = () => {
+                const newMod = {
+                    id: `mod-${Date.now()}`,
+                    weekTitle: `第 ${modules.length + 1} 週：新課程單元`,
+                    materials: [
+                        { id: `mat-${Date.now()}`, name: '📄 核心簡報', url: 'https://docs.google.com/presentation/d/1dFpb5V70RYVoGXNqb-GKAHEIWJdgzW7kNOZBoXtqBEU/embed', mode: 'embed' }
+                    ],
+                    description: '請輸入當週課程目標、導引說明或注意事項...',
+                    tasks: [
+                        { id: `task-${Date.now()}`, label: '📝 課堂表單任務', url: 'https://forms.google.com' }
+                    ],
+                    indicators: ['V1', 'O1.1', 'C1V1']
+                };
+                saveAllModules([...modules, newMod], '✨ 已新增週次課程模組！');
+            };
+
+            const handleDeleteModule = (moduleId) => {
+                if (confirm('確定要刪除整個週次模組嗎？')) {
+                    const updated = modules.filter(m => m.id !== moduleId);
+                    saveAllModules(updated, '✨ 已刪除模組！');
+                }
             };
 
             return (
                 <div className="pb-24">
-                    {/* Toast 提示條 */}
-                    {toastMsg && (
-                        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-sm px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-2 animate-bounce border border-slate-700">
-                            <span>{toastMsg}</span>
-                        </div>
-                    )}
-
-                    {/* 頂部導覽列 */}
-                    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+                    {}
+                    <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                             <div className="flex items-center space-x-3">
-                                <div className="bg-indigo-600 text-white p-2 rounded-lg shadow-md">
-                                    <i className="fa-solid fa-graduation-cap text-xl"></i>
+                                <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-indigo-200 shadow-lg">
+                                    <i className="fa-solid fa-graduation-cap"></i>
                                 </div>
                                 <div>
-                                    <h1 className="font-bold text-slate-800 text-base sm:text-lg leading-tight flex items-center space-x-2">
-                                        <span>來去踅基隆 115</span>
-                                        {isCloudConnected ? (
-                                            <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full font-medium border border-emerald-300">
-                                                <i className="fa-solid fa-cloud mr-1"></i>雲端已同步
-                                            </span>
-                                        ) : (
-                                            <span className="text-[10px] bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full font-medium border border-amber-300">
-                                                <i className="fa-solid fa-hard-drive mr-1"></i>本機載入中
-                                            </span>
-                                        )}
-                                    </h1>
+                                    <h1 className="text-lg font-bold text-slate-900 leading-tight">來去踅基隆 115</h1>
                                     <p className="text-xs text-slate-500">課程管理系統儀表板</p>
                                 </div>
+                                
+                                <span className={`ml-2 text-xs px-2.5 py-1 rounded-full font-medium border flex items-center space-x-1 ${
+                                    isCloudConnected 
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                                        : 'bg-amber-50 text-amber-700 border-amber-200'
+                                }`}>
+                                    <span className={`w-2 h-2 rounded-full ${isCloudConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
+                                    <span>{isCloudConnected ? '☁️ 雲端已同步' : '💾 本機模式'}</span>
+                                </span>
                             </div>
 
-                            <div className="flex items-center space-x-2 sm:space-x-3">
-                                {/* 單元進度選單 */}
-                                <select
-                                    onChange={(e) => {
-                                        if (e.target.value) {
-                                            document.getElementById(e.target.value)?.scrollIntoView({ behavior: 'smooth' });
-                                        }
-                                    }}
-                                    className="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 text-xs sm:text-sm rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-                                >
-                                    <option value="">🎯 切換單元進度...</option>
-                                    {modules.map((m) => (
-                                        <option key={m.id} value={m.id}>{m.weekTitle}</option>
-                                    ))}
-                                </select>
-
+                            <div className="flex items-center space-x-2">
                                 {currentUser ? (
-                                    <div className="flex items-center space-x-2 bg-indigo-50 border border-indigo-200 px-2 py-1.5 rounded-lg">
-                                        <span className="text-xs text-indigo-700 font-medium hidden md:inline">
-                                            <i className="fa-solid fa-user-shield mr-1"></i>
-                                            {currentUser.username} 老師
-                                        </span>
+                                    <>
                                         <button
-                                            onClick={() => saveAllModules(modules, true)}
-                                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1 rounded transition shadow-sm font-medium"
+                                            onClick={() => saveAllModules(modules, '✨ 已發布所有週次變更！')}
+                                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-3.5 py-2 rounded-xl transition shadow-md flex items-center space-x-1.5"
                                         >
-                                            <i className="fa-solid fa-floppy-disk mr-1"></i>儲存變更
-                                        </button>
-                                        <button
-                                            onClick={handleAddModule}
-                                            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-2.5 py-1 rounded transition shadow-sm font-medium"
-                                        >
-                                            <i className="fa-solid fa-plus mr-1"></i>新增模組
+                                            <i className="fa-solid fa-floppy-disk"></i>
+                                            <span>儲存全部變更</span>
                                         </button>
                                         <button
                                             onClick={() => setCurrentUser(null)}
-                                            className="text-xs text-slate-400 hover:text-rose-600 px-1"
-                                            title="登出"
+                                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs px-3 py-2 rounded-xl transition border border-slate-200"
                                         >
-                                            <i className="fa-solid fa-right-from-bracket"></i>
+                                            登出 ({currentUser})
                                         </button>
-                                    </div>
+                                    </>
                                 ) : (
                                     <button
-                                        onClick={() => setShowLoginModal(true)}
-                                        className="bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm px-3 py-1.5 rounded-lg shadow transition flex items-center space-x-1.5"
+                                        onClick={() => setLoginModalOpen(true)}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs px-3.5 py-2 rounded-xl transition shadow-sm flex items-center space-x-1.5"
                                     >
-                                        <i className="fa-solid fa-lock text-xs"></i>
+                                        <i className="fa-solid fa-user-lock"></i>
                                         <span>教師登入</span>
                                     </button>
                                 )}
@@ -513,90 +457,129 @@
                         </div>
                     </header>
 
-                    {/* 主要內容區 */}
-                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-12">
-                        {modules.length === 0 && (
-                            <div className="text-center py-20 bg-white rounded-2xl border border-slate-200 shadow-sm">
-                                <p className="text-slate-500">目前尚無課程模組，請教師登入後點擊「新增模組」。</p>
-                            </div>
-                        )}
+                    {/* Toast 提示 */}
+                    {toastMsg && (
+                        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl text-xs font-medium flex items-center space-x-2 animate-bounce">
+                            <i className="fa-solid fa-circle-check text-emerald-400"></i>
+                            <span>{toastMsg}</span>
+                        </div>
+                    )}
 
+                    {}
+                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-12">
                         {modules.map((mod, index) => {
-                            const materials = mod.materials && mod.materials.length > 0 ? mod.materials : [{ id: 'm-default', name: '📄 核心教材', url: '' }];
+                            const materials = mod.materials && mod.materials.length > 0 ? mod.materials : [{ id: 'm-default', name: '📄 核心教材', url: '', mode: 'embed' }];
                             const activeIdx = activeMaterialTabs[mod.id] || 0;
                             const currentMaterial = materials[activeIdx] || materials[0];
-                            const parsedMaterialUrl = parseEmbedUrl(currentMaterial.url);
+                            const currentMode = currentMaterial.mode || (currentMaterial.url && currentMaterial.url.includes('earth.google.com') ? 'external' : 'embed');
+                            const parsedMat = parseEmbedUrl(currentMaterial.url, currentMode);
 
                             return (
-                                <section
-                                    key={mod.id}
-                                    id={mod.id}
-                                    className="bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden transition-all hover:shadow-lg relative"
-                                >
-                                    {/* 模組頂部標題列 */}
-                                    <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
-                                        <div className="flex-1 mr-4">
+                                <section key={mod.id} id={mod.id} className="bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden transition-all hover:shadow-lg relative">
+                                    {/* 週次標題區（含逐週獨立儲存按鈕） */}
+                                    <div className="bg-slate-50/80 px-6 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                                        <div className="flex items-center space-x-3 flex-grow">
+                                            <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full border border-indigo-200">
+                                                模組 {index + 1}
+                                            </span>
                                             {currentUser ? (
                                                 <input
                                                     type="text"
                                                     value={mod.weekTitle}
-                                                    onChange={(e) => handleUpdateModuleField(mod.id, 'weekTitle', e.target.value)}
-                                                    className="w-full font-bold text-lg text-indigo-900 bg-white border border-slate-300 rounded px-2.5 py-1 focus:ring-2 focus:ring-indigo-500"
+                                                    onChange={(e) => {
+                                                        const updated = modules.map(m => m.id === mod.id ? { ...m, weekTitle: e.target.value } : m);
+                                                        setModules(updated);
+                                                    }}
+                                                    className="font-bold text-base text-slate-800 bg-white border border-slate-300 rounded-lg px-2.5 py-1 focus:ring-2 focus:ring-indigo-500 flex-grow"
                                                 />
                                             ) : (
-                                                <h2 className="font-bold text-lg text-slate-800 flex items-center">
-                                                    <span className="bg-indigo-100 text-indigo-700 text-xs px-2.5 py-0.5 rounded-full mr-2">
-                                                        模組 {index + 1}
-                                                    </span>
-                                                    {mod.weekTitle}
-                                                </h2>
+                                                <h2 className="font-bold text-base text-slate-800">{mod.weekTitle}</h2>
                                             )}
                                         </div>
 
                                         {currentUser && (
-                                            <button
-                                                onClick={() => handleDeleteModule(mod.id)}
-                                                className="text-rose-500 hover:text-rose-700 text-xs px-2.5 py-1 rounded hover:bg-rose-50 transition"
-                                            >
-                                                <i className="fa-solid fa-trash-can mr-1"></i>刪除模組
-                                            </button>
+                                            <div className="flex items-center space-x-2">
+                                                <button
+                                                    onClick={() => saveSingleModule(mod.id)}
+                                                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-3 py-1.5 rounded-lg transition shadow-sm flex items-center space-x-1"
+                                                    title="獨立儲存此週模組修改"
+                                                >
+                                                    <i className="fa-solid fa-floppy-disk"></i>
+                                                    <span>儲存本週內容</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteModule(mod.id)}
+                                                    className="text-slate-400 hover:text-rose-600 transition text-sm px-2 py-1 rounded-lg hover:bg-rose-50"
+                                                    title="刪除模組"
+                                                >
+                                                    <i className="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
 
+                                    {/* 二欄配置 */}
+                                    {}
                                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
                                         
-                                        {/* 左側：教材展示與頁籤容器 */}
+                                        {/* 左側：教材頁籤與播放器 */}
                                         <div className="lg:col-span-7 flex flex-col space-y-3">
-                                            
-                                            {/* 多教材頁籤列 (Tab Bar) */}
-                                            <div className="flex items-center justify-between border-b border-slate-200 pb-2 overflow-x-auto">
-                                                <div className="flex space-x-1.5">
+                                            <div className="flex items-center justify-between border-b border-slate-200 pb-2 overflow-x-auto no-scrollbar">
+                                                <div className="flex space-x-1.5 items-center">
                                                     {materials.map((mat, mIdx) => {
                                                         const isActive = mIdx === activeIdx;
                                                         return (
-                                                            <button
+                                                            <div
                                                                 key={mat.id}
-                                                                onClick={() => setActiveMaterialTabs({ ...activeMaterialTabs, [mod.id]: mIdx })}
-                                                                className={`text-xs px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1.5 whitespace-nowrap ${
-                                                                    isActive
-                                                                        ? 'bg-indigo-600 text-white shadow-sm'
-                                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                                                }`}
+                                                                draggable={!!currentUser}
+                                                                onDragStart={(e) => {
+                                                                    if (!currentUser) return;
+                                                                    e.dataTransfer.setData('text/plain', mIdx.toString());
+                                                                }}
+                                                                onDragOver={(e) => {
+                                                                    if (!currentUser) return;
+                                                                    e.preventDefault();
+                                                                }}
+                                                                onDrop={(e) => {
+                                                                    if (!currentUser) return;
+                                                                    e.preventDefault();
+                                                                    const dragIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
+                                                                    handleReorderMaterials(mod.id, dragIdx, mIdx);
+                                                                }}
+                                                                className="inline-flex items-center group"
                                                             >
-                                                                <span>{mat.name || `教材 ${mIdx + 1}`}</span>
-                                                                {currentUser && materials.length > 1 && (
-                                                                    <span
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            handleDeleteMaterialTab(mod.id, mat.id);
-                                                                        }}
-                                                                        className="hover:text-rose-300 ml-1 text-[10px]"
-                                                                        title="刪除此頁籤"
-                                                                    >
-                                                                        <i className="fa-solid fa-xmark"></i>
-                                                                    </span>
-                                                                )}
-                                                            </button>
+                                                                <button
+                                                                    onClick={() => setActiveMaterialTabs({ ...activeMaterialTabs, [mod.id]: mIdx })}
+                                                                    className={`text-xs px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1.5 whitespace-nowrap ${
+                                                                        isActive
+                                                                            ? 'bg-indigo-600 text-white shadow-sm'
+                                                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                                    }`}
+                                                                >
+                                                                    {currentUser && (
+                                                                        <i className="fa-solid fa-grip-vertical text-[10px] opacity-60 mr-0.5 cursor-grab" title="拖曳調整順序"></i>
+                                                                    )}
+                                                                    <span>{mat.name || `教材 ${mIdx + 1}`}</span>
+                                                                    
+                                                                    {currentUser && materials.length > 1 && (
+                                                                        <span className="ml-1.5 inline-flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition">
+                                                                            {mIdx > 0 && (
+                                                                                <span onClick={(e) => { e.stopPropagation(); handleMoveMaterialTab(mod.id, mIdx, -1); }} className="hover:text-amber-300 px-0.5 text-[10px]" title="左移">
+                                                                                    <i className="fa-solid fa-chevron-left"></i>
+                                                                                </span>
+                                                                            )}
+                                                                            {mIdx < materials.length - 1 && (
+                                                                                <span onClick={(e) => { e.stopPropagation(); handleMoveMaterialTab(mod.id, mIdx, 1); }} className="hover:text-amber-300 px-0.5 text-[10px]" title="右移">
+                                                                                    <i className="fa-solid fa-chevron-right"></i>
+                                                                                </span>
+                                                                            )}
+                                                                            <span onClick={(e) => { e.stopPropagation(); handleDeleteMaterialTab(mod.id, mat.id); }} className="hover:text-rose-300 ml-1 text-[10px]" title="刪除頁籤">
+                                                                                <i className="fa-solid fa-xmark"></i>
+                                                                            </span>
+                                                                        </span>
+                                                                    )}
+                                                                </button>
+                                                            </div>
                                                         );
                                                     })}
 
@@ -605,37 +588,32 @@
                                                             onClick={() => handleAddMaterialTab(mod.id)}
                                                             className="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1.5 rounded-lg font-medium transition whitespace-nowrap"
                                                         >
-                                                            <i className="fa-solid fa-plus mr-1"></i>新增教材頁籤
+                                                            <i className="fa-solid fa-plus mr-1"></i>新增頁籤
                                                         </button>
                                                     )}
                                                 </div>
 
                                                 <div className="flex space-x-1.5 ml-2">
-                                                    <a
-                                                        href={parsedMaterialUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-2 py-1 rounded transition flex items-center space-x-1"
-                                                    >
-                                                        <i className="fa-solid fa-arrow-up-right-from-square"></i>
-                                                        <span className="hidden sm:inline">新分頁</span>
-                                                    </a>
-                                                    <button
-                                                        onClick={() => setPreviewUrl(parsedMaterialUrl)}
-                                                        className="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 px-2 py-1 rounded transition flex items-center space-x-1 font-medium"
-                                                    >
-                                                        <i className="fa-solid fa-expand"></i>
-                                                        <span className="hidden sm:inline">全螢幕</span>
-                                                    </button>
+                                                    {currentMaterial.url && (
+                                                        <a
+                                                            href={currentMaterial.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1.5 rounded-lg font-medium transition flex items-center space-x-1 whitespace-nowrap border border-indigo-200"
+                                                        >
+                                                            <i className="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                                            <span>在新分頁開啟</span>
+                                                        </a>
+                                                    )}
                                                 </div>
                                             </div>
 
-                                            {/* 教師編輯當前頁籤名稱與網址 */}
+                                            {}
                                             {currentUser && currentMaterial && (
                                                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs space-y-2">
-                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                                        <div>
-                                                            <label className="font-semibold text-amber-900 block mb-1">頁籤顯示名稱：</label>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                                                        <div className="sm:col-span-3">
+                                                            <label className="font-semibold text-amber-900 block mb-1">頁籤名稱：</label>
                                                             <input
                                                                 type="text"
                                                                 value={currentMaterial.name}
@@ -643,136 +621,197 @@
                                                                 className="w-full bg-white border border-amber-300 rounded px-2 py-1 text-slate-700 focus:ring-2 focus:ring-amber-500"
                                                             />
                                                         </div>
-                                                        <div className="sm:col-span-2">
-                                                            <label className="font-semibold text-amber-900 block mb-1">教材網址 / HTML 嵌入碼：</label>
+                                                        <div className="sm:col-span-5">
+                                                            <label className="font-semibold text-amber-900 block mb-1">教材網址：</label>
                                                             <input
                                                                 type="text"
                                                                 value={currentMaterial.url}
-                                                                onChange={(e) => handleUpdateMaterialTab(mod.id, currentMaterial.id, 'url', e.target.value)}
-                                                                placeholder="貼上 Canva/Google 簡報網址或 HTML 嵌入碼..."
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value;
+                                                                    handleUpdateMaterialTab(mod.id, currentMaterial.id, 'url', val);
+                                                                    if (val.includes('earth.google.com')) {
+                                                                        handleUpdateMaterialTab(mod.id, currentMaterial.id, 'mode', 'external');
+                                                                    }
+                                                                }}
+                                                                placeholder="貼上 Canva / Google 簡報 / Google Earth 網址..."
                                                                 className="w-full bg-white border border-amber-300 rounded px-2 py-1 font-mono text-slate-700 focus:ring-2 focus:ring-amber-500"
                                                             />
+                                                        </div>
+                                                        <div className="sm:col-span-2">
+                                                            <label className="font-semibold text-amber-900 block mb-1">開啟模式：</label>
+                                                            <select
+                                                                value={currentMode}
+                                                                onChange={(e) => handleUpdateMaterialTab(mod.id, currentMaterial.id, 'mode', e.target.value)}
+                                                                className="w-full bg-white border border-amber-300 rounded px-2 py-1 text-slate-700 focus:ring-2 focus:ring-amber-500"
+                                                            >
+                                                                <option value="embed">🖼️ 內嵌視窗</option>
+                                                                <option value="external">🔗 新頁面開啟</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="sm:col-span-2">
+                                                            <button
+                                                                onClick={() => saveSingleModule(mod.id)}
+                                                                className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-1 px-2 rounded transition shadow-sm text-xs flex items-center justify-center space-x-1"
+                                                            >
+                                                                <i className="fa-solid fa-floppy-disk"></i>
+                                                                <span>儲存頁籤</span>
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 </div>
                                             )}
 
-                                            {/* 嵌入框架 */}
-                                            <div className="w-full h-[380px] bg-slate-100 rounded-xl overflow-hidden border border-slate-200 shadow-inner relative">
-                                                {parsedMaterialUrl ? (
+                                            {/* 播放器容器 */}
+                                            {}
+                                            <div className="relative w-full aspect-video bg-slate-900 rounded-xl overflow-hidden border border-slate-300 shadow-inner flex flex-col items-center justify-center">
+                                                {currentMode === 'external' || parsedMat.type === 'earth' ? (
+                                                    <div className="w-full h-full bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-6 flex flex-col items-center justify-center text-center space-y-4">
+                                                        <div className="w-16 h-16 rounded-2xl bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-indigo-300 text-3xl shadow-xl animate-bounce">
+                                                            {currentMaterial.url && currentMaterial.url.includes('earth.google.com') ? (
+                                                                <i className="fa-solid fa-earth-asia"></i>
+                                                            ) : (
+                                                                <i className="fa-solid fa-arrow-up-right-from-square"></i>
+                                                            )}
+                                                        </div>
+                                                        <div className="space-y-1.5 max-w-md">
+                                                            <h3 className="text-white font-bold text-base">
+                                                                {currentMaterial.name || '外部數位教材資源'}
+                                                            </h3>
+                                                            <p className="text-slate-400 text-xs leading-relaxed">
+                                                                此教材已設定為「獨立新頁面開啟」，提供完整全螢幕功能與最佳瀏覽體驗。
+                                                            </p>
+                                                        </div>
+                                                        <a
+                                                            href={currentMaterial.url || '#'}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-7 py-3 rounded-xl shadow-xl hover:shadow-indigo-500/30 transition flex items-center space-x-2.5 text-xs border border-indigo-400/30"
+                                                        >
+                                                            <span>🚀 在新分頁開啟教材</span>
+                                                            <i className="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                                        </a>
+                                                    </div>
+                                                ) : parsedMat.url ? (
                                                     <iframe
-                                                        src={parsedMaterialUrl}
+                                                        id={`iframe-${mod.id}`}
+                                                        src={parsedMat.url}
                                                         className="w-full h-full border-0"
-                                                        title={currentMaterial.name}
+                                                        allow="fullscreen; geolocation; webgl; clipboard-write; encrypted-media"
                                                         allowFullScreen
                                                     ></iframe>
                                                 ) : (
-                                                    <div className="flex items-center justify-center h-full text-slate-400 text-sm">
-                                                        尚未設定教材網址
+                                                    <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center space-y-2">
+                                                        <i className="fa-solid fa-file-circle-question text-4xl"></i>
+                                                        <p className="text-sm">尚未設定教材內容網址</p>
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
 
-                                        {/* 右側：課程說明與任務按鈕 */}
+                                        {/* 右側：課程導引、任務按鈕與指標 */}
+                                        {}
                                         <div className="lg:col-span-5 flex flex-col justify-between space-y-6">
-                                            
                                             <div className="space-y-4">
-                                                {/* 週說明與表現任務 */}
-                                                <div className="space-y-2">
-                                                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-                                                        <i className="fa-solid fa-bullseye mr-1.5 text-rose-500"></i>週進度課程說明 & 表現任務
-                                                    </span>
-
+                                                <div>
+                                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center space-x-1">
+                                                        <i className="fa-solid fa-align-left text-indigo-500"></i>
+                                                        <span>課程說明與導引</span>
+                                                    </h3>
                                                     {currentUser ? (
                                                         <textarea
-                                                            rows="5"
+                                                            rows="4"
                                                             value={mod.description}
-                                                            onChange={(e) => handleUpdateModuleField(mod.id, 'description', e.target.value)}
-                                                            className="w-full border border-slate-300 rounded-lg p-3 text-sm leading-relaxed text-slate-700 focus:ring-2 focus:ring-indigo-500 font-sans"
-                                                            placeholder="請輸入活動內涵與表現任務..."
-                                                        />
+                                                            onChange={(e) => {
+                                                                const updated = modules.map(m => m.id === mod.id ? { ...m, description: e.target.value } : m);
+                                                                setModules(updated);
+                                                            }}
+                                                            className="w-full text-xs text-slate-700 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 leading-relaxed font-sans"
+                                                        ></textarea>
                                                     ) : (
-                                                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm leading-relaxed text-slate-700 whitespace-pre-line shadow-inner">
+                                                        <div className="text-xs text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50 p-3.5 rounded-xl border border-slate-200/60 font-sans">
                                                             {mod.description}
                                                         </div>
                                                     )}
                                                 </div>
 
-                                                {/* 學生表現任務按鈕 (點擊直接進入編輯 Modal) */}
-                                                <div className="space-y-2">
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-xs font-medium text-slate-600">
-                                                            學生表現任務按鈕 {currentUser && <span className="text-indigo-600 text-[11px]">（點擊按鈕可直接修改）</span>}：
-                                                        </span>
-                                                        {currentUser && (
-                                                            <button
-                                                                onClick={() => setEditingTaskModal({ moduleId: mod.id, isNew: true, task: { label: '', url: '' } })}
-                                                                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-                                                            >
-                                                                <i className="fa-solid fa-plus mr-1"></i>新增任務按鈕
-                                                            </button>
-                                                        )}
-                                                    </div>
+                                                {/* 學生任務按鈕 */}
+                                                <div>
+                                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center space-x-1">
+                                                        <i className="fa-solid fa-list-check text-indigo-500"></i>
+                                                        <span>學生表現任務與互動連結</span>
+                                                    </h3>
 
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {mod.tasks.map((task) => (
-                                                            <div key={task.id} className="inline-flex items-center">
+                                                    <div className="flex flex-wrap gap-2.5">
+                                                        {mod.tasks.map((t) => (
+                                                            <div key={t.id} className="inline-block">
                                                                 {currentUser ? (
                                                                     <button
-                                                                        onClick={() => setEditingTaskModal({ moduleId: mod.id, task, isNew: false })}
-                                                                        className="bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-xs font-medium px-3.5 py-2 rounded-lg shadow-sm transition flex items-center space-x-1.5"
+                                                                        onClick={() => handleTaskClickInTeacherMode(mod.id, t)}
+                                                                        className="bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 text-xs px-3.5 py-2 rounded-xl font-semibold transition flex items-center space-x-1.5 shadow-sm group"
+                                                                        title="點擊修改任務按鈕"
                                                                     >
-                                                                        <i className="fa-solid fa-pen text-[10px] opacity-70"></i>
-                                                                        <span>{task.label}</span>
+                                                                        <span>{t.label}</span>
+                                                                        <i className="fa-solid fa-pen-to-square text-[10px] text-indigo-500 group-hover:scale-110 transition"></i>
                                                                     </button>
                                                                 ) : (
                                                                     <a
-                                                                        href={task.url}
+                                                                        href={t.url}
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
-                                                                        className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-medium px-3.5 py-2 rounded-lg shadow-sm transition flex items-center space-x-1.5 active:scale-95"
+                                                                        className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-4 py-2 rounded-xl font-semibold transition shadow-sm hover:shadow flex items-center space-x-1.5"
                                                                     >
-                                                                        <span>{task.label}</span>
+                                                                        <span>{t.label}</span>
                                                                         <i className="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-70"></i>
                                                                     </a>
                                                                 )}
                                                             </div>
                                                         ))}
+
+                                                        {currentUser && (
+                                                            <button
+                                                                onClick={() => setEditingTaskModal({ moduleId: mod.id, task: { label: '', url: '' }, isNew: true })}
+                                                                className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-2 rounded-xl font-medium border border-dashed border-slate-300 transition flex items-center space-x-1"
+                                                            >
+                                                                <i className="fa-solid fa-plus text-[10px]"></i>
+                                                                <span>新增任務按鈕</span>
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            {/* 指標區 (VALUE + OECD + 國語文) */}
-                                            <div className="border-t border-slate-200 pt-4 space-y-2">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center">
-                                                        <i className="fa-solid fa-clipboard-check mr-1.5 text-emerald-600"></i>
-                                                        VALUE、OECD 與 國語文指標
-                                                    </span>
+                                            {/* 指標卡片 */}
+                                            {}
+                                            <div className="border-t border-slate-100 pt-4">
+                                                <div className="flex items-center justify-between mb-2.5">
+                                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1">
+                                                        <i className="fa-solid fa-tags text-indigo-500"></i>
+                                                        <span>融入素養與學習表現 ({mod.indicators.length})</span>
+                                                    </h3>
+
                                                     {currentUser && (
                                                         <button
-                                                            onClick={() => setEditingIndicatorModule(mod)}
-                                                            className="text-xs text-indigo-600 hover:underline font-medium"
+                                                            onClick={() => setEditingIndicatorsModal(mod.id)}
+                                                            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition flex items-center space-x-1"
                                                         >
-                                                            <i className="fa-solid fa-pen-to-square mr-1"></i>勾選指標
+                                                            <i className="fa-solid fa-sliders"></i>
+                                                            <span>勾選指標</span>
                                                         </button>
                                                     )}
                                                 </div>
 
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {mod.indicators.map((indId) => {
-                                                        const ind = ALL_INDICATORS.find(p => p.id === indId);
-                                                        if (!ind) return null;
+                                                        const target = ALL_INDICATORS.find(i => i.id === indId);
+                                                        if (!target) return null;
                                                         return (
-                                                            <button
-                                                                key={ind.id}
-                                                                onClick={() => setSelectedIndicator(ind)}
-                                                                className={`text-xs px-2.5 py-1 rounded-md border font-medium transition cursor-pointer hover:opacity-80 shadow-sm ${ind.tagColor}`}
+                                                            <span
+                                                                key={target.id}
+                                                                title={target.content}
+                                                                className={`text-[11px] px-2.5 py-1 rounded-lg font-medium border ${target.tagColor} shadow-2xs transition cursor-help`}
                                                             >
-                                                                <i className="fa-solid fa-circle-info mr-1 text-[10px]"></i>
-                                                                {ind.short}
-                                                            </button>
+                                                                {target.short}
+                                                            </span>
                                                         );
                                                     })}
                                                 </div>
@@ -783,27 +822,22 @@
                                 </section>
                             );
                         })}
+
+                        {currentUser && (
+                            <div className="text-center py-4">
+                                <button
+                                    onClick={handleAddModule}
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-2xl shadow-lg transition flex items-center space-x-2 mx-auto"
+                                >
+                                    <i className="fa-solid fa-plus"></i>
+                                    <span>新增週次課程模組</span>
+                                </button>
+                            </div>
+                        )}
                     </main>
 
+                    {/* Modals 彈窗組件 */}
                     {}
-                    {/* 全螢幕預覽 Modal */}
-                    {previewUrl && (
-                        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden shadow-2xl">
-                                <div className="bg-slate-800 text-white px-6 py-3 flex justify-between items-center">
-                                    <span className="text-sm font-medium"><i className="fa-solid fa-expand mr-2"></i>教材全螢幕預覽視窗</span>
-                                    <button onClick={() => setPreviewUrl(null)} className="text-slate-400 hover:text-white text-lg">
-                                        <i className="fa-solid fa-xmark"></i>
-                                    </button>
-                                </div>
-                                <div className="flex-1 bg-slate-900">
-                                    <iframe src={previewUrl} className="w-full h-full border-0" title="Full preview"></iframe>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* 任務按鈕編輯 Modal */}
                     {editingTaskModal && (
                         <TaskEditModal
                             task={editingTaskModal.task}
@@ -814,140 +848,27 @@
                         />
                     )}
 
-                    {/* 指標內涵說明 Modal */}
-                    {selectedIndicator && (
-                        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative">
-                                <button onClick={() => setSelectedIndicator(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
-                                    <i className="fa-solid fa-xmark text-lg"></i>
-                                </button>
-                                <span className="bg-indigo-100 text-indigo-800 text-xs px-2.5 py-1 rounded font-bold">
-                                    {selectedIndicator.category} 指標內涵
-                                </span>
-                                <h3 className="text-base font-bold text-slate-800">{selectedIndicator.title}</h3>
-                                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-700 leading-relaxed whitespace-pre-line">
-                                    {selectedIndicator.content}
-                                </div>
-                                <div className="text-right">
-                                    <button onClick={() => setSelectedIndicator(null)} className="bg-slate-800 text-white text-xs px-4 py-2 rounded-lg">
-                                        關閉說明
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                    {editingIndicatorsModal && (
+                        <IndicatorsSelectModal
+                            selectedIds={modules.find(m => m.id === editingIndicatorsModal)?.indicators || []}
+                            onToggle={(indId) => handleToggleIndicator(editingIndicatorsModal, indId)}
+                            onClose={() => {
+                                setEditingIndicatorsModal(null);
+                                saveSingleModule(editingIndicatorsModal);
+                            }}
+                        />
                     )}
 
-                    {/* 勾選指標 Modal */}
-                    {editingIndicatorModule && (
-                        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto">
-                                <div className="flex justify-between items-center border-b pb-3">
-                                    <h3 className="font-bold text-slate-800">勾選 VALUE、OECD 與 國語文指標 - {editingIndicatorModule.weekTitle}</h3>
-                                    <button onClick={() => setEditingIndicatorModule(null)} className="text-slate-400 hover:text-slate-600">
-                                        <i className="fa-solid fa-xmark text-lg"></i>
-                                    </button>
-                                </div>
-
-                                <div className="space-y-6">
-                                    {['VALUE', 'OECD', '國語文'].map((cat) => (
-                                        <div key={cat} className="space-y-2">
-                                            <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 border-l-4 border-indigo-600 px-3 py-1.5 rounded-r">
-                                                【{cat}】領域檢核指標
-                                            </h4>
-                                            <div className="space-y-2">
-                                                {ALL_INDICATORS.filter(ind => ind.category === cat).map((ind) => {
-                                                    const isChecked = editingIndicatorModule.indicators.includes(ind.id);
-                                                    return (
-                                                        <label
-                                                            key={ind.id}
-                                                            className={`flex items-start p-3 rounded-xl border cursor-pointer transition ${
-                                                                isChecked ? 'bg-indigo-50 border-indigo-300' : 'bg-white border-slate-200 hover:bg-slate-50'
-                                                            }`}
-                                                        >
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={isChecked}
-                                                                onChange={() => handleToggleIndicator(editingIndicatorModule.id, ind.id)}
-                                                                className="mt-1 h-4 w-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
-                                                            />
-                                                            <div className="ml-3">
-                                                                <span className="text-sm font-bold text-slate-800 block">
-                                                                    {ind.title}
-                                                                </span>
-                                                                <span className="text-xs text-slate-500">{ind.content}</span>
-                                                            </div>
-                                                        </label>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="text-right border-t pt-3">
-                                    <button onClick={() => setEditingIndicatorModule(null)} className="bg-indigo-600 text-white text-sm px-5 py-2 rounded-lg font-medium">
-                                        儲存並關閉
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                    {loginModalOpen && (
+                        <LoginModal
+                            onLogin={(user) => {
+                                setCurrentUser(user);
+                                setLoginModalOpen(false);
+                                showToast('🔑 登入成功！已切換至教師編輯模式');
+                            }}
+                            onClose={() => setLoginModalOpen(false)}
+                        />
                     )}
-
-                    {/* 教師登入 Modal */}
-                    {showLoginModal && (
-                        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl relative">
-                                <button onClick={() => setShowLoginModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
-                                    <i className="fa-solid fa-xmark text-lg"></i>
-                                </button>
-                                <div className="text-center space-y-1">
-                                    <div className="bg-indigo-100 text-indigo-600 w-12 h-12 rounded-full flex items-center justify-center mx-auto text-xl">
-                                        <i className="fa-solid fa-user-gear"></i>
-                                    </div>
-                                    <h3 className="font-bold text-lg text-slate-800">教師登入編輯管理</h3>
-                                    <p className="text-xs text-slate-500">登入後即可進行課程模組新增與編修</p>
-                                </div>
-
-                                {loginError && (
-                                    <div className="bg-rose-50 border border-rose-200 text-rose-600 text-xs p-2.5 rounded-lg text-center">
-                                        {loginError}
-                                    </div>
-                                )}
-
-                                <form onSubmit={handleLogin} className="space-y-4">
-                                    <div>
-                                        <label className="text-xs font-medium text-slate-700 block mb-1">教師帳號</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={loginForm.username}
-                                            onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
-                                            placeholder="請輸入帳號 (例如: t5111)"
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-medium text-slate-700 block mb-1">密碼</label>
-                                        <input
-                                            type="password"
-                                            required
-                                            value={loginForm.password}
-                                            onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                                            placeholder="請輸入密碼"
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                        />
-                                    </div>
-                                    <button
-                                        type="submit"
-                                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg text-sm transition shadow-md"
-                                    >
-                                        登入編輯權限
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    )}
-
                 </div>
             );
         }
@@ -969,12 +890,12 @@
                             <i className="fa-solid fa-xmark text-lg"></i>
                         </button>
                         <h3 className="font-bold text-base text-slate-800">
-                            {isNew ? '➕ 新增學生表現任務按鈕' : '✏️ 編輯任務按鈕'}
+                            {isNew ? '➕ 新增學生任務按鈕' : '✏️ 編輯任務按鈕與連結'}
                         </h3>
 
                         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
                             <div>
-                                <label className="font-semibold text-slate-700 block mb-1">按鈕顯示名稱（包含 Emoji）：</label>
+                                <label className="font-semibold text-slate-700 block mb-1">按鈕名稱（可含 Emoji）：</label>
                                 <input
                                     type="text"
                                     required
@@ -1029,6 +950,149 @@
                                     </button>
                                 </div>
                             </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
+        function IndicatorsSelectModal({ selectedIds, onToggle, onClose }) {
+            const [activeTab, setActiveTab] = useState('VALUE');
+            const filtered = ALL_INDICATORS.filter(i => i.category === activeTab);
+
+            return (
+                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl relative max-h-[85vh] flex flex-col">
+                        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                            <i className="fa-solid fa-xmark text-lg"></i>
+                        </button>
+
+                        <h3 className="font-bold text-base text-slate-800">
+                            🎯 勾選當週融入之教學指標
+                        </h3>
+
+                        <div className="flex space-x-2 border-b border-slate-200 pb-2">
+                            <button
+                                onClick={() => setActiveTab('VALUE')}
+                                className={`text-xs px-3 py-1.5 rounded-lg font-bold transition ${
+                                    activeTab === 'VALUE' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                }`}
+                            >
+                                VALUE 框架 (8項)
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('OECD')}
+                                className={`text-xs px-3 py-1.5 rounded-lg font-bold transition ${
+                                    activeTab === 'OECD' ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                }`}
+                            >
+                                OECD AI 素養 (19項)
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('國語文')}
+                                className={`text-xs px-3 py-1.5 rounded-lg font-bold transition ${
+                                    activeTab === '國語文' ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                }`}
+                            >
+                                國語文學習表現 (17項)
+                            </button>
+                        </div>
+
+                        <div className="overflow-y-auto space-y-2.5 flex-grow pr-1">
+                            {filtered.map((ind) => {
+                                const isChecked = selectedIds.includes(ind.id);
+                                return (
+                                    <div
+                                        key={ind.id}
+                                        onClick={() => onToggle(ind.id)}
+                                        className={`p-3 rounded-xl border text-xs cursor-pointer transition flex items-start space-x-3 ${
+                                            isChecked ? 'border-indigo-500 bg-indigo-50/50 shadow-2xs' : 'border-slate-200 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={isChecked}
+                                            onChange={() => {}}
+                                            className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <div>
+                                            <p className="font-bold text-slate-800">{ind.title}</p>
+                                            <p className="text-slate-600 mt-0.5 leading-relaxed">{ind.content}</p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-200 text-right">
+                            <button
+                                onClick={onClose}
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-5 py-2 rounded-xl transition"
+                            >
+                                完成選擇並儲存
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function LoginModal({ onLogin, onClose }) {
+            const [account, setAccount] = useState('');
+            const [password, setPassword] = useState('');
+
+            const handleLogin = (e) => {
+                e.preventDefault();
+                if (account === 't5111' && password === '24567126') {
+                    onLogin(account);
+                } else {
+                    alert('帳號或密碼錯誤，請重新輸入！');
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl relative">
+                        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                            <i className="fa-solid fa-xmark text-lg"></i>
+                        </button>
+
+                        <div className="text-center space-y-1">
+                            <h3 className="font-bold text-base text-slate-800">🔑 教師權限登入</h3>
+                            <p className="text-xs text-slate-500">登入後即可即時編輯與發布課程內容</p>
+                        </div>
+
+                        <form onSubmit={handleLogin} className="space-y-3 text-xs">
+                            <div>
+                                <label className="font-semibold text-slate-700 block mb-1">教師帳號：</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={account}
+                                    onChange={(e) => setAccount(e.target.value)}
+                                    placeholder="請輸入帳號"
+                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="font-semibold text-slate-700 block mb-1">密碼：</label>
+                                <input
+                                    type="password"
+                                    required
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="請輸入密碼"
+                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition shadow-sm text-xs mt-2"
+                            >
+                                確認登入
+                            </button>
                         </form>
                     </div>
                 </div>
