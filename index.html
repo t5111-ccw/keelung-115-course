@@ -15,7 +15,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js" crossorigin></script>
     
-    <!-- Firebase SDKs -->
+    <!-- Firebase SDKs (Compat) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
@@ -41,7 +41,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // 內建預設 Firebase 設定 (全自動雲端同步)
+        // 預設 Firebase 金鑰
         const DEFAULT_FIREBASE_CONFIG = {
             apiKey: "AIzaSyBa54AEZYHLm4CuYJP81b3Ng30pE_XJmws",
             authDomain: "keelung-115-course.firebaseapp.com",
@@ -52,7 +52,7 @@
             appId: "1:720942769713:web:6fab4902da2813afadd710"
         };
 
-        // 完整指標庫 (VALUE V1~V8 + OECD O1~O4 + 高中國語文 17 項指標)
+        // 完整指標庫 (VALUE V1~V8 + OECD 細項指標 O1.1~O4.4 + 高中國語文 17 項指標)
         const ALL_INDICATORS = [
             // VALUE 指標
             { id: 'V1', category: 'VALUE', title: 'V1. 促進社會互動與協同學習 (Vivifying Social Learning)', short: 'VALUE: 促進社會互動', tagColor: 'bg-blue-100 text-blue-800 border-blue-300', content: '【從孤立走向共構】確保科技不造成孤立，而是創造更深度的合作共構與社會互動。防範學生個人封閉或由 AI 徹底取代同儕對話。' },
@@ -64,11 +64,29 @@
             { id: 'V7', category: 'VALUE', title: 'V7. 提供自適應的個人化路徑 (Enabling Adaptive Pathways)', short: 'VALUE: 自適應路徑', tagColor: 'bg-indigo-100 text-indigo-800 border-indigo-300', content: '【打造專屬學習節奏】提供非線性選擇，符合準備度的差異化，培養學生的自主學習能力與學習代理權（Agency）。' },
             { id: 'V8', category: 'VALUE', title: 'V8. 實踐包容設計與差異化 (Embracing Universal Design)', short: 'VALUE: 實踐包容設計', tagColor: 'bg-orange-100 text-orange-800 border-orange-300', content: '【落實 UDL 服務多元】彈性調整教學內容與產出（如錄音、繪圖、文字、Podcast），滿足不同起點學生的多元需求。' },
             
-            // OECD AILit 指標
-            { id: 'O1', category: 'OECD', title: 'OECD 1. 參與 AI (Engage with AI)', short: 'OECD: 參與 AI', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '【負責任參與者】辨識日常生活中 AI 角色與影響，評估 AI 產出準確度，質疑預測系統推播，並理解演算法社會偏見與資源消耗。' },
-            { id: 'O2', category: 'OECD', title: 'OECD 2. 與 AI 共創 (Co-create with AI)', short: 'OECD: 與 AI 共創', tagColor: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300', content: '【維持人類主體性】將 AI 作為創意合作夥伴，進行多模態原型設計、腦力激盪與迭代對話，同時尊重原創智慧財產權與內容真實性。' },
-            { id: 'O3', category: 'OECD', title: 'OECD 3. 管理 AI (Manage AI)', short: 'OECD: 管理 AI', tagColor: 'bg-cyan-100 text-cyan-800 border-cyan-300', content: '【意圖性人機分工】解析問題結構，決定何時自動化或增強任務，保留人類在批判判斷與領域知識的優勢，並全程監測 AI 運作品質。' },
-            { id: 'O4', category: 'OECD', title: 'OECD 4. 形塑 AI (Shape AI)', short: 'OECD: 形塑 AI', tagColor: 'bg-violet-100 text-violet-800 border-violet-300', content: '【反映人類價值】調查 AI 系統侷限性，利用範例測試評價模型，調整訓練數據與設計，使 AI 系統促進社會福祉與包容性。' },
+            // OECD AILit 細項指標 (四大領域 19 項細項指標)
+            { id: 'O1.1', category: 'OECD', title: 'OECD 1.1 辨識 AI 在不同情境中的角色與影響', short: 'OECD 1.1 角色影響', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '【辨識日常影響】能識別日常生活中不同型別的 AI，並分析 AI 系統如何塑造個人的信念、選擇、學習與公民行為。' },
+            { id: 'O1.2', category: 'OECD', title: 'OECD 1.2 說明 AI 執行方式並釐清迷思', short: 'OECD 1.2 釐清迷思', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '【非人類工具】理解 AI 是基於模式產出的工具而非人類，能準確描述工具執行方式並向同儕釐清常見的 AI 迷思。' },
+            { id: 'O1.3', category: 'OECD', title: 'OECD 1.3 評估 AI 產出之接受、修訂或拒絕', short: 'OECD 1.3 評估產出', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '【查核與辯證】利用可信來源驗證 AI 產出準確性，嚴格評估並提出支持「接受、修改或拒絕」AI 產出的合理理由。' },
+            { id: 'O1.4', category: 'OECD', title: 'OECD 1.4 檢視預測型 AI 推薦系統的侷限與影響', short: 'OECD 1.4 推薦系統侷限', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '【反思推薦機制】理解 AI 蒐集數據提出建議的機制，分析推薦系統何時有益、何時過於狹隘或限制個人視野。' },
+            { id: 'O1.5', category: 'OECD', title: 'OECD 1.5 比較 AI 系統能源與自然資源消耗', short: 'OECD 1.5 資源消耗', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '【綠色科技視角】認識 AI 運作需消耗電力、硬體與冷卻水資源，評估開發、部署與個人使用選擇對環境的影響。' },
+            { id: 'O1.6', category: 'OECD', title: 'OECD 1.6 說明 AI 如何強化或複製社會偏見', short: 'OECD 1.6 反思社會偏見', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '【公平與非偏見】明白訓練數據集可能帶有偏見，分析偏見數據或分類錯誤的設計如何導致不公平或扭曲的結果。' },
+            { id: 'O1.7', category: 'OECD', title: 'OECD 1.7 分析 AI 使用是否符合倫理原則與人類價值', short: 'OECD 1.7 倫理與價值', tagColor: 'bg-sky-100 text-sky-800 border-sky-300', content: '【以人為本倫理】評估 AI 系統的部署與應用是否符合社會倫理原則、肖像權、隱私權保護與人類福祉價值。' },
+
+            { id: 'O2.1', category: 'OECD', title: 'OECD 2.1 使用 AI 探索原創思想的新視角', short: 'OECD 2.1 探索原創視角', tagColor: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300', content: '【擴充思考靈感】探索 AI 如何擴充思考或激發靈感，將個人想法與 AI 建議進行對比辯證，保持獨創性與主體性。' },
+            { id: 'O2.2', category: 'OECD', title: 'OECD 2.2 利用 AI 進行視覺化、原型設計與發想', short: 'OECD 2.2 原型設計發想', tagColor: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300', content: '【多模態共創】實驗不同類型的 AI 生成器（文字/圖像/音樂），透過多輪 Prompting 開發並呈現場景與功能原型。' },
+            { id: 'O2.3', category: 'OECD', title: 'OECD 2.3 引導生成式 AI 獲取回饋並支援自我反思', short: 'OECD 2.3 獲取反饋反思', tagColor: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300', content: '【迭代對話優化】透過精確 Prompt 與 AI 進行多輪對話，評價 AI 反饋並進行自我反思，自主決定採用或調整建議。' },
+            { id: 'O2.4', category: 'OECD', title: 'OECD 2.4 分析 AI 如何保障或侵犯內容真實性與智慧財產權', short: 'OECD 2.4 內容真實與智財', tagColor: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300', content: '【尊重智慧財產】理解 AI 產出可能的版權爭議，適切進行引註與歸屬，在使用 AI 時維持原創真實性並尊重他人創作。' },
+
+            { id: 'O3.1', category: 'OECD', title: 'OECD 3.1 根據任務性質決定是否使用 AI', short: 'OECD 3.1 意圖性使用選擇', tagColor: 'bg-cyan-100 text-cyan-800 border-cyan-300', content: '【合宜工具選擇】理解 AI 局限性，決定 AI 是否為執行特定任務的合適工具，明確劃分「AI 協助」與「人類獨立」範疇。' },
+            { id: 'O3.2', category: 'OECD', title: 'OECD 3.2 比較不同 AI 運作機制並選擇適當方法', short: 'OECD 3.2 機制比較選擇', tagColor: 'bg-cyan-100 text-cyan-800 border-cyan-300', content: '【分析技術特性】區分基於規則的方法與機器學習演算法的優缺點，根據情境、數據品質與預期成果選擇最佳方法。' },
+            { id: 'O3.3', category: 'OECD', title: 'OECD 3.3 解析問題結構進行人機分工與自動化', short: 'OECD 3.3 人機意圖分工', tagColor: 'bg-cyan-100 text-cyan-800 border-cyan-300', content: '【問題結構拆解】將複雜問題分解，分別指派給人類（批判判斷、情感與領域知識）與 AI（資料整理、結構自動化）。' },
+            { id: 'O3.4', category: 'OECD', title: 'OECD 3.4 在解題歷程中全程監測與評估 AI 使用', short: 'OECD 3.4 全程監測評估', tagColor: 'bg-cyan-100 text-cyan-800 border-cyan-300', content: '【掌控最終責任】在專案中設立檢查點，當 AI 產出偏離目標、出現幻覺或偏見時，能主動介入並重定向 AI 工作流程。' },
+
+            { id: 'O4.1', category: 'OECD', title: 'OECD 4.1 調查 AI 系統運作、設計對象與局限性', short: 'OECD 4.1 系統局限調查', tagColor: 'bg-violet-100 text-violet-800 border-violet-300', content: '【解析系統邊界】識別並說明不同 AI 系統的設計目的、預期使用者、輸入數據限制，評估其優勢與情境局限性。' },
+            { id: 'O4.2', category: 'OECD', title: 'OECD 4.2 利用界定標準與測試案例評價 AI 系統', short: 'OECD 4.2 界定標準評價', tagColor: 'bg-violet-100 text-violet-800 border-violet-300', content: '【系統效能評價】定義明確標準與測試案例，評價 AI 系統的效能與準確度，並向開發或合作夥伴提出具體改進建議。' },
+            { id: 'O4.3', category: 'OECD', title: 'OECD 4.3 設計 AI 時注意資料來源如何影響輸出', short: 'OECD 4.3 資料來源影響', tagColor: 'bg-violet-100 text-violet-800 border-violet-300', content: '【數據源頭追溯】評估訓練數據集的屬性（規模、多樣性、偏差），探討數據源頭如何改變 AI 系統的最終建議與行為。' },
+            { id: 'O4.4', category: 'OECD', title: 'OECD 4.4 改進 AI 系統以促進人類福祉與社會效益', short: 'OECD 4.4 促進社會福祉', tagColor: 'bg-violet-100 text-violet-800 border-violet-300', content: '【包容與福祉設計】針對特定 AI 工具提出設計修訂建議，確保具備不同需求的人都能獲得支持，使 AI 服務社會福祉。' },
 
             // 國語文 學習表現指標
             { id: 'C1V1', category: '國語文', title: '國語文 1-V-1 聆聽態度與資訊擷取', short: '國語文 1-V-1', tagColor: 'bg-rose-100 text-rose-800 border-rose-300', content: '能養成良好的聆聽態度，擷取完整資訊。' },
@@ -109,7 +127,7 @@
                     { id: 't1', label: '🕹️ Pikmin 破冰遊戲', url: 'https://pikminbloom.com' },
                     { id: 't2', label: '📄 學習歷程回饋單', url: 'https://forms.google.com' }
                 ],
-                indicators: ['V1', 'V6', 'O1', 'C1V1', 'C2V4']
+                indicators: ['V1', 'V6', 'O1.1', 'O1.3', 'C1V1', 'C2V4']
             },
             {
                 id: 'mod-2',
@@ -122,7 +140,7 @@
                     { id: 't3', label: '💭 上傳對話紀錄 (Prompt History)', url: 'https://forms.google.com' },
                     { id: 't4', label: '🗺️ 地理資訊表單', url: 'https://maps.google.com' }
                 ],
-                indicators: ['V2', 'V3', 'V4', 'O3', 'C5V4', 'C6V4']
+                indicators: ['V2', 'V3', 'V4', 'O3.1', 'O3.3', 'C5V4', 'C6V4']
             }
         ];
 
@@ -294,7 +312,7 @@
                     tasks: [
                         { id: `t-${Date.now()}`, label: '📝 新任務按鈕', url: 'https://google.com' }
                     ],
-                    indicators: ['V1', 'O1', 'C1V1']
+                    indicators: ['V1', 'O1.1', 'C1V1']
                 };
                 const updated = [...modules, newModule];
                 saveAllModules(updated);
@@ -495,7 +513,7 @@
                         </div>
                     </header>
 
-                    {}
+                    {/* 主要內容區 */}
                     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-12">
                         {modules.length === 0 && (
                             <div className="text-center py-20 bg-white rounded-2xl border border-slate-200 shadow-sm">
@@ -547,7 +565,7 @@
 
                                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
                                         
-                                        {}
+                                        {/* 左側：教材展示與頁籤容器 */}
                                         <div className="lg:col-span-7 flex flex-col space-y-3">
                                             
                                             {/* 多教材頁籤列 (Tab Bar) */}
@@ -656,7 +674,7 @@
                                             </div>
                                         </div>
 
-                                        {}
+                                        {/* 右側：課程說明與任務按鈕 */}
                                         <div className="lg:col-span-5 flex flex-col justify-between space-y-6">
                                             
                                             <div className="space-y-4">
