@@ -32,6 +32,9 @@
         .animate-fadeIn {
             animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
+        .draft-stripe {
+            background-image: repeating-linear-gradient(45deg, rgba(241, 245, 249, 0.6), rgba(241, 245, 249, 0.6) 10px, rgba(255, 255, 255, 0.8) 10px, rgba(255, 255, 255, 0.8) 20px);
+        }
     </style>
 </head>
 <body class="bg-pattern text-slate-800 antialiased min-h-screen">
@@ -134,7 +137,6 @@
                 if (ind.id.startsWith('O3')) return { card: 'bg-cyan-50/95 border-cyan-200 text-cyan-950 shadow-cyan-100', title: 'text-cyan-900', icon: 'text-cyan-600', content: 'text-cyan-800/90', close: 'text-cyan-400 hover:text-cyan-700' };
                 if (ind.id.startsWith('O4')) return { card: 'bg-violet-50/95 border-violet-200 text-violet-950 shadow-violet-100', title: 'text-violet-900', icon: 'text-violet-600', content: 'text-violet-800/90', close: 'text-violet-400 hover:text-violet-700' };
             }
-            // VALUE 框架配對
             switch(ind.id) {
                 case 'V1': return { card: 'bg-blue-50/95 border-blue-200 text-blue-950 shadow-blue-100', title: 'text-blue-900', icon: 'text-blue-600', content: 'text-blue-800/90', close: 'text-blue-400 hover:text-blue-700' };
                 case 'V2': return { card: 'bg-emerald-50/95 border-emerald-200 text-emerald-950 shadow-emerald-100', title: 'text-emerald-900', icon: 'text-emerald-600', content: 'text-emerald-800/90', close: 'text-emerald-400 hover:text-emerald-700' };
@@ -152,6 +154,7 @@
             {
                 id: 'mod-1',
                 weekTitle: '第 1 週：課程說明與破冰遊戲',
+                isHidden: false,
                 materials: [
                     { id: 'm1', name: '📄 核心課程簡報', url: 'https://docs.google.com/presentation/d/1dFpb5V70RYVoGXNqb-GKAHEIWJdgzW7kNOZBoXtqBEU/embed', mode: 'embed' },
                     { id: 'm2', name: '🌍 3D 地球巡航', url: 'https://earth.google.com/web/@25.118621,121.75801729,135a,8744d/data=CgRCAggB', mode: 'external' }
@@ -223,7 +226,8 @@
                         description: m.description || '',
                         tasks: Array.isArray(m.tasks) ? m.tasks : [],
                         indicators: Array.isArray(m.indicators) ? m.indicators : [],
-                        materials: materials
+                        materials: materials,
+                        isHidden: typeof m.isHidden === 'boolean' ? m.isHidden : false
                     };
                 });
             };
@@ -242,7 +246,7 @@
             const dbRef = useRef(null);
 
             const [activeMaterialTabs, setActiveMaterialTabs] = useState({});
-            const [activeIndicatorInfo, setActiveIndicatorInfo] = useState({}); // 各週當前展開的指標ID
+            const [activeIndicatorInfo, setActiveIndicatorInfo] = useState({});
             const [editingTaskModal, setEditingTaskModal] = useState(null);
             const [editingIndicatorsModal, setEditingIndicatorsModal] = useState(null);
             const [loginModalOpen, setLoginModalOpen] = useState(false);
@@ -297,6 +301,33 @@
                 const targetMod = modules.find(m => m.id === moduleId);
                 const title = targetMod ? targetMod.weekTitle : '當週模組';
                 saveAllModules(modules, `✨ 已成功獨立儲存：${title}`);
+            };
+
+            const handleReorderModules = (dragIndex, dropIndex) => {
+                if (dragIndex === dropIndex || dragIndex < 0 || dropIndex < 0) return;
+                const nextModules = [...modules];
+                const [removed] = nextModules.splice(dragIndex, 1);
+                nextModules.splice(dropIndex, 0, removed);
+                saveAllModules(nextModules, '✨ 課程模組順序已更新並儲存！');
+            };
+
+            const handleMoveModule = (currentIndex, direction) => {
+                const targetIndex = currentIndex + direction;
+                if (targetIndex < 0 || targetIndex >= modules.length) return;
+                handleReorderModules(currentIndex, targetIndex);
+            };
+
+            const handleToggleHideModule = (moduleId) => {
+                const updated = modules.map(m => {
+                    if (m.id === moduleId) {
+                        const newHiddenState = !m.isHidden;
+                        return { ...m, isHidden: newHiddenState };
+                    }
+                    return m;
+                });
+                const target = updated.find(m => m.id === moduleId);
+                const statusText = target.isHidden ? '🔒 已隱藏該週（學生端將不可見）' : '👁️ 已公開該週（學生端可正常瀏覽）';
+                saveAllModules(updated, `✨ ${statusText}`);
             };
 
             const handleReorderMaterials = (moduleId, dragIdx, dropIdx) => {
@@ -430,6 +461,7 @@
                 const newMod = {
                     id: `mod-${Date.now()}`,
                     weekTitle: `第 ${modules.length + 1} 週：新課程單元`,
+                    isHidden: false,
                     materials: [
                         { id: `mat-${Date.now()}`, name: '📄 核心簡報', url: 'https://docs.google.com/presentation/d/1dFpb5V70RYVoGXNqb-GKAHEIWJdgzW7kNOZBoXtqBEU/embed', mode: 'embed' }
                     ],
@@ -449,9 +481,11 @@
                 }
             };
 
+            const visibleModules = currentUser ? modules : modules.filter(m => !m.isHidden);
+
             return (
                 <div className="pb-24">
-                    {}
+                    {/* Header */}
                     <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                             <div className="flex items-center space-x-3">
@@ -513,7 +547,16 @@
 
                     {}
                     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-12">
-                        {modules.map((mod, index) => {
+                        {visibleModules.length === 0 && !currentUser && (
+                            <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 shadow-sm p-8 max-w-lg mx-auto space-y-3">
+                                <i className="fa-solid fa-seedling text-indigo-400 text-4xl"></i>
+                                <h3 className="font-bold text-slate-800 text-base">課程內容準備中</h3>
+                                <p className="text-xs text-slate-500">目前尚無公開發布的週次模組，請稍後再回來查看！</p>
+                            </div>
+                        )}
+
+                        {visibleModules.map((mod, index) => {
+                            const originalIndex = modules.findIndex(m => m.id === mod.id);
                             const materials = mod.materials && mod.materials.length > 0 ? mod.materials : [{ id: 'm-default', name: '📄 核心教材', url: '', mode: 'embed' }];
                             const activeIdx = activeMaterialTabs[mod.id] || 0;
                             const currentMaterial = materials[activeIdx] || materials[0];
@@ -525,13 +568,74 @@
                             const popoverStyle = getIndicatorPopoverStyle(activeIndObj);
 
                             return (
-                                <section key={mod.id} id={mod.id} className="bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden transition-all hover:shadow-lg relative">
-                                    {/* 週次標題區（含逐週獨立儲存按鈕） */}
-                                    <div className="bg-slate-50/80 px-6 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                                <section
+                                    key={mod.id}
+                                    id={mod.id}
+                                    onDragOver={(e) => {
+                                        if (!currentUser) return;
+                                        e.preventDefault();
+                                    }}
+                                    onDrop={(e) => {
+                                        if (!currentUser) return;
+                                        e.preventDefault();
+                                        const dragIndex = parseInt(e.dataTransfer.getData('text/module-drag'), 10);
+                                        if (!isNaN(dragIndex)) {
+                                            handleReorderModules(dragIndex, originalIndex);
+                                        }
+                                    }}
+                                    className={`rounded-2xl border transition-all duration-200 overflow-hidden relative ${
+                                        mod.isHidden && currentUser
+                                            ? 'bg-amber-50/40 border-dashed border-amber-300 shadow-sm draft-stripe'
+                                            : 'bg-white border-slate-200 shadow-md hover:shadow-lg'
+                                    }`}
+                                >
+                                    {/* 週次標題區（含拖曳、上下移、隱藏開關、獨立儲存） */}
+                                    <div className={`px-6 py-4 border-b flex flex-wrap items-center justify-between gap-4 ${
+                                        mod.isHidden && currentUser ? 'bg-amber-100/60 border-amber-200' : 'bg-slate-50/80 border-slate-200'
+                                    }`}>
                                         <div className="flex items-center space-x-3 flex-grow">
-                                            <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full border border-indigo-200">
-                                                模組 {index + 1}
+                                            {currentUser && (
+                                                <div
+                                                    draggable
+                                                    onDragStart={(e) => {
+                                                        e.dataTransfer.setData('text/module-drag', originalIndex.toString());
+                                                    }}
+                                                    className="cursor-grab active:cursor-grabbing p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition"
+                                                    title="拖曳整週卡片排序"
+                                                >
+                                                    <i className="fa-solid fa-grip-lines text-base"></i>
+                                                </div>
+                                            )}
+
+                                            <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
+                                                mod.isHidden && currentUser
+                                                    ? 'bg-amber-200 text-amber-900 border-amber-300'
+                                                    : 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                                            }`}>
+                                                模組 {originalIndex + 1}
                                             </span>
+
+                                            {currentUser && (
+                                                <div className="flex items-center space-x-1">
+                                                    <button
+                                                        onClick={() => handleMoveModule(originalIndex, -1)}
+                                                        disabled={originalIndex === 0}
+                                                        className="w-7 h-7 rounded-lg bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition text-xs shadow-2xs"
+                                                        title="上移一週"
+                                                    >
+                                                        <i className="fa-solid fa-arrow-up"></i>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleMoveModule(originalIndex, 1)}
+                                                        disabled={originalIndex === modules.length - 1}
+                                                        className="w-7 h-7 rounded-lg bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition text-xs shadow-2xs"
+                                                        title="下移一週"
+                                                    >
+                                                        <i className="fa-solid fa-arrow-down"></i>
+                                                    </button>
+                                                </div>
+                                            )}
+
                                             {currentUser ? (
                                                 <input
                                                     type="text"
@@ -549,6 +653,21 @@
 
                                         {currentUser && (
                                             <div className="flex items-center space-x-2">
+                                                {/* 隱藏/發布切換鈕 */}
+                                                <button
+                                                    onClick={() => handleToggleHideModule(mod.id)}
+                                                    className={`text-xs px-3 py-1.5 rounded-lg font-bold transition flex items-center space-x-1.5 border ${
+                                                        mod.isHidden
+                                                            ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
+                                                            : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                                                    }`}
+                                                    title="切換學生端是否能看見此週模組"
+                                                >
+                                                    <i className={`fa-solid ${mod.isHidden ? 'fa-eye-slash' : 'fa-eye text-emerald-600'}`}></i>
+                                                    <span>{mod.isHidden ? '🔒 已隱藏 (草稿)' : '👁️ 已公開發布'}</span>
+                                                </button>
+
+                                                {/* 獨立儲存此週 */}
                                                 <button
                                                     onClick={() => saveSingleModule(mod.id)}
                                                     className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-3 py-1.5 rounded-lg transition shadow-sm flex items-center space-x-1"
@@ -557,6 +676,8 @@
                                                     <i className="fa-solid fa-floppy-disk"></i>
                                                     <span>儲存本週內容</span>
                                                 </button>
+
+                                                {/* 刪除模組 */}
                                                 <button
                                                     onClick={() => handleDeleteModule(mod.id)}
                                                     className="text-slate-400 hover:text-rose-600 transition text-sm px-2 py-1 rounded-lg hover:bg-rose-50"
@@ -615,336 +736,336 @@
                                                                             {mIdx > 0 && (
                                                                                 <span onClick={(e) => { e.stopPropagation(); handleMoveMaterialTab(mod.id, mIdx, -1); }} className="hover:text-amber-300 px-0.5 text-[10px]" title="左移">
                                                                                     <i className="fa-solid fa-chevron-left"></i>
-                                                                                </span>
-                                                                            )}
-                                                                            {mIdx < materials.length - 1 && (
-                                                                                <span onClick={(e) => { e.stopPropagation(); handleMoveMaterialTab(mod.id, mIdx, 1); }} className="hover:text-amber-300 px-0.5 text-[10px]" title="右移">
-                                                                                    <i className="fa-solid fa-chevron-right"></i>
-                                                                                </span>
-                                                                            )}
-                                                                            <span onClick={(e) => { e.stopPropagation(); handleDeleteMaterialTab(mod.id, mat.id); }} className="hover:text-rose-300 ml-1 text-[10px]" title="刪除頁籤">
-                                                                                <i className="fa-solid fa-xmark"></i>
                                                                             </span>
+                                                                        )}
+                                                                        {mIdx < materials.length - 1 && (
+                                                                            <span onClick={(e) => { e.stopPropagation(); handleMoveMaterialTab(mod.id, mIdx, 1); }} className="hover:text-amber-300 px-0.5 text-[10px]" title="右移">
+                                                                                <i className="fa-solid fa-chevron-right"></i>
+                                                                            </span>
+                                                                        )}
+                                                                        <span onClick={(e) => { e.stopPropagation(); handleDeleteMaterialTab(mod.id, mat.id); }} className="hover:text-rose-300 ml-1 text-[10px]" title="刪除頁籤">
+                                                                            <i className="fa-solid fa-xmark"></i>
                                                                         </span>
-                                                                    )}
-                                                                </button>
-                                                            </div>
-                                                        );
-                                                    })}
-
-                                                    {currentUser && (
-                                                        <button
-                                                            onClick={() => handleAddMaterialTab(mod.id)}
-                                                            className="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1.5 rounded-lg font-medium transition whitespace-nowrap"
-                                                        >
-                                                            <i className="fa-solid fa-plus mr-1"></i>新增頁籤
-                                                        </button>
-                                                    )}
-                                                </div>
-
-                                                <div className="flex space-x-1.5 ml-2">
-                                                    {currentMaterial.url && (
-                                                        <a
-                                                            href={currentMaterial.url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1.5 rounded-lg font-medium transition flex items-center space-x-1 whitespace-nowrap border border-indigo-200"
-                                                        >
-                                                            <i className="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                                                            <span>在新分頁開啟</span>
-                                                        </a>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* 教師模式下的單頁籤編輯列 */}
-                                            {currentUser && currentMaterial && (
-                                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs space-y-2">
-                                                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-                                                        <div className="sm:col-span-3">
-                                                            <label className="font-semibold text-amber-900 block mb-1">頁籤名稱：</label>
-                                                            <input
-                                                                type="text"
-                                                                value={currentMaterial.name}
-                                                                onChange={(e) => handleUpdateMaterialTab(mod.id, currentMaterial.id, 'name', e.target.value)}
-                                                                className="w-full bg-white border border-amber-300 rounded px-2 py-1 text-slate-700 focus:ring-2 focus:ring-amber-500"
-                                                            />
-                                                        </div>
-                                                        <div className="sm:col-span-5">
-                                                            <label className="font-semibold text-amber-900 block mb-1">教材網址：</label>
-                                                            <input
-                                                                type="text"
-                                                                value={currentMaterial.url}
-                                                                onChange={(e) => {
-                                                                    const val = e.target.value;
-                                                                    handleUpdateMaterialTab(mod.id, currentMaterial.id, 'url', val);
-                                                                    if (val.includes('earth.google.com')) {
-                                                                        handleUpdateMaterialTab(mod.id, currentMaterial.id, 'mode', 'external');
-                                                                    }
-                                                                }}
-                                                                placeholder="貼上 Canva / Google 簡報 / Google Earth 網址..."
-                                                                className="w-full bg-white border border-amber-300 rounded px-2 py-1 font-mono text-slate-700 focus:ring-2 focus:ring-amber-500"
-                                                            />
-                                                        </div>
-                                                        <div className="sm:col-span-2">
-                                                            <label className="font-semibold text-amber-900 block mb-1">開啟模式：</label>
-                                                            <select
-                                                                value={currentMode}
-                                                                onChange={(e) => handleUpdateMaterialTab(mod.id, currentMaterial.id, 'mode', e.target.value)}
-                                                                className="w-full bg-white border border-amber-300 rounded px-2 py-1 text-slate-700 focus:ring-2 focus:ring-amber-500"
-                                                            >
-                                                                <option value="embed">🖼️ 內嵌視窗</option>
-                                                                <option value="external">🔗 新頁面開啟</option>
-                                                            </select>
-                                                        </div>
-                                                        <div className="sm:col-span-2">
-                                                            <button
-                                                                onClick={() => saveSingleModule(mod.id)}
-                                                                className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-1 px-2 rounded transition shadow-sm text-xs flex items-center justify-center space-x-1"
-                                                            >
-                                                                <i className="fa-solid fa-floppy-disk"></i>
-                                                                <span>儲存頁籤</span>
+                                                                    </span>
+                                                                )}
                                                             </button>
                                                         </div>
-                                                    </div>
-                                                </div>
-                                            )}
+                                                    );
+                                                })}
 
-                                            {/* 播放器容器 */}
-                                            <div className="relative w-full aspect-video bg-slate-900 rounded-xl overflow-hidden border border-slate-300 shadow-inner flex flex-col items-center justify-center">
-                                                {currentMode === 'external' || parsedMat.type === 'earth' ? (
-                                                    <div className="w-full h-full bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-6 flex flex-col items-center justify-center text-center space-y-4">
-                                                        <div className="w-16 h-16 rounded-2xl bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-indigo-300 text-3xl shadow-xl animate-bounce">
-                                                            {currentMaterial.url && currentMaterial.url.includes('earth.google.com') ? (
-                                                                <i className="fa-solid fa-earth-asia"></i>
-                                                            ) : (
-                                                                <i className="fa-solid fa-arrow-up-right-from-square"></i>
-                                                            )}
-                                                        </div>
-                                                        <div className="space-y-1.5 max-w-md">
-                                                            <h3 className="text-white font-bold text-base">
-                                                                {currentMaterial.name || '外部數位教材資源'}
-                                                            </h3>
-                                                            <p className="text-slate-400 text-xs leading-relaxed">
-                                                                此教材已設定為「獨立新頁面開啟」，提供完整全螢幕功能與最佳瀏覽體驗。
-                                                            </p>
-                                                        </div>
-                                                        <a
-                                                            href={currentMaterial.url || '#'}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-7 py-3 rounded-xl shadow-xl hover:shadow-indigo-500/30 transition flex items-center space-x-2.5 text-xs border border-indigo-400/30"
-                                                        >
-                                                            <span>🚀 在新分頁開啟教材</span>
-                                                            <i className="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                                                        </a>
-                                                    </div>
-                                                ) : parsedMat.url ? (
-                                                    <iframe
-                                                        id={`iframe-${mod.id}`}
-                                                        src={parsedMat.url}
-                                                        className="w-full h-full border-0"
-                                                        allow="fullscreen; geolocation; webgl; clipboard-write; encrypted-media"
-                                                        allowFullScreen
-                                                    ></iframe>
-                                                ) : (
-                                                    <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center space-y-2">
-                                                        <i className="fa-solid fa-file-circle-question text-4xl"></i>
-                                                        <p className="text-sm">尚未設定教材內容網址</p>
-                                                    </div>
+                                                {currentUser && (
+                                                    <button
+                                                        onClick={() => handleAddMaterialTab(mod.id)}
+                                                        className="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1.5 rounded-lg font-medium transition whitespace-nowrap"
+                                                    >
+                                                        <i className="fa-solid fa-plus mr-1"></i>新增頁籤
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            <div className="flex space-x-1.5 ml-2">
+                                                {currentMaterial.url && (
+                                                    <a
+                                                        href={currentMaterial.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1.5 rounded-lg font-medium transition flex items-center space-x-1 whitespace-nowrap border border-indigo-200"
+                                                    >
+                                                        <i className="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                                        <span>在新分頁開啟</span>
+                                                    </a>
                                                 )}
                                             </div>
                                         </div>
 
-                                        {/* 右側：課程導引、任務按鈕與指標 */}
-                                        <div className="lg:col-span-5 flex flex-col justify-between space-y-6">
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center space-x-1">
-                                                        <i className="fa-solid fa-align-left text-indigo-500"></i>
-                                                        <span>課程說明與導引</span>
-                                                    </h3>
-                                                    {currentUser ? (
-                                                        <textarea
-                                                            rows="4"
-                                                            value={mod.description}
+                                        {}
+                                        {currentUser && currentMaterial && (
+                                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs space-y-2">
+                                                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                                                    <div className="sm:col-span-3">
+                                                        <label className="font-semibold text-amber-900 block mb-1">頁籤名稱：</label>
+                                                        <input
+                                                            type="text"
+                                                            value={currentMaterial.name}
+                                                            onChange={(e) => handleUpdateMaterialTab(mod.id, currentMaterial.id, 'name', e.target.value)}
+                                                            className="w-full bg-white border border-amber-300 rounded px-2 py-1 text-slate-700 focus:ring-2 focus:ring-amber-500"
+                                                        />
+                                                    </div>
+                                                    <div className="sm:col-span-5">
+                                                        <label className="font-semibold text-amber-900 block mb-1">教材網址：</label>
+                                                        <input
+                                                            type="text"
+                                                            value={currentMaterial.url}
                                                             onChange={(e) => {
-                                                                const updated = modules.map(m => m.id === mod.id ? { ...m, description: e.target.value } : m);
-                                                                setModules(updated);
+                                                                const val = e.target.value;
+                                                                handleUpdateMaterialTab(mod.id, currentMaterial.id, 'url', val);
+                                                                if (val.includes('earth.google.com')) {
+                                                                    handleUpdateMaterialTab(mod.id, currentMaterial.id, 'mode', 'external');
+                                                                }
                                                             }}
-                                                            className="w-full text-xs text-slate-700 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 leading-relaxed font-sans"
-                                                        ></textarea>
-                                                    ) : (
-                                                        <div className="text-xs text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50 p-3.5 rounded-xl border border-slate-200/60 font-sans">
-                                                            {mod.description}
-                                                        </div>
-                                                    )}
+                                                            placeholder="貼上 Canva / Google 簡報 / Google Earth 網址..."
+                                                            className="w-full bg-white border border-amber-300 rounded px-2 py-1 font-mono text-slate-700 focus:ring-2 focus:ring-amber-500"
+                                                        />
+                                                    </div>
+                                                    <div className="sm:col-span-2">
+                                                        <label className="font-semibold text-amber-900 block mb-1">開啟模式：</label>
+                                                        <select
+                                                            value={currentMode}
+                                                            onChange={(e) => handleUpdateMaterialTab(mod.id, currentMaterial.id, 'mode', e.target.value)}
+                                                            className="w-full bg-white border border-amber-300 rounded px-2 py-1 text-slate-700 focus:ring-2 focus:ring-amber-500"
+                                                        >
+                                                            <option value="embed">🖼️ 內嵌視窗</option>
+                                                            <option value="external">🔗 新頁面開啟</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="sm:col-span-2">
+                                                        <button
+                                                            onClick={() => saveSingleModule(mod.id)}
+                                                            className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-1 px-2 rounded transition shadow-sm text-xs flex items-center justify-center space-x-1"
+                                                        >
+                                                            <i className="fa-solid fa-floppy-disk"></i>
+                                                            <span>儲存頁籤</span>
+                                                        </button>
+                                                    </div>
                                                 </div>
+                                            </div>
+                                        )}
 
-                                                {/* 學生任務按鈕 */}
-                                                <div>
-                                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center space-x-1">
-                                                        <i className="fa-solid fa-list-check text-indigo-500"></i>
-                                                        <span>學生表現任務與互動連結</span>
-                                                    </h3>
-
-                                                    <div className="flex flex-wrap gap-2.5">
-                                                        {mod.tasks.map((t) => (
-                                                            <div key={t.id} className="inline-block">
-                                                                {currentUser ? (
-                                                                    <button
-                                                                        onClick={() => handleTaskClickInTeacherMode(mod.id, t)}
-                                                                        className="bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 text-xs px-3.5 py-2 rounded-xl font-semibold transition flex items-center space-x-1.5 shadow-sm group"
-                                                                        title="點擊修改任務按鈕"
-                                                                    >
-                                                                        <span>{t.label}</span>
-                                                                        <i className="fa-solid fa-pen-to-square text-[10px] text-indigo-500 group-hover:scale-110 transition"></i>
-                                                                    </button>
-                                                                ) : (
-                                                                    <a
-                                                                        href={t.url}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-4 py-2 rounded-xl font-semibold transition shadow-sm hover:shadow flex items-center space-x-1.5"
-                                                                    >
-                                                                        <span>{t.label}</span>
-                                                                        <i className="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-70"></i>
-                                                                    </a>
-                                                                )}
-                                                            </div>
-                                                        ))}
-
-                                                        {currentUser && (
-                                                            <button
-                                                                onClick={() => setEditingTaskModal({ moduleId: mod.id, task: { label: '', url: '' }, isNew: true })}
-                                                                className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-2 rounded-xl font-medium border border-dashed border-slate-300 transition flex items-center space-x-1"
-                                                            >
-                                                                <i className="fa-solid fa-plus text-[10px]"></i>
-                                                                <span>新增任務按鈕</span>
-                                                            </button>
+                                        {}
+                                        <div className="relative w-full aspect-video bg-slate-900 rounded-xl overflow-hidden border border-slate-300 shadow-inner flex flex-col items-center justify-center">
+                                            {currentMode === 'external' || parsedMat.type === 'earth' ? (
+                                                <div className="w-full h-full bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-6 flex flex-col items-center justify-center text-center space-y-4">
+                                                    <div className="w-16 h-16 rounded-2xl bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-indigo-300 text-3xl shadow-xl animate-bounce">
+                                                        {currentMaterial.url && currentMaterial.url.includes('earth.google.com') ? (
+                                                            <i className="fa-solid fa-earth-asia"></i>
+                                                        ) : (
+                                                            <i className="fa-solid fa-arrow-up-right-from-square"></i>
                                                         )}
                                                     </div>
-                                                </div>
-                                            </div>
-
-                                            {}
-                                            <div className="border-t border-slate-100 pt-4 relative">
-                                                <div className="flex items-center justify-between mb-2.5">
-                                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1">
-                                                        <i className="fa-solid fa-tags text-indigo-500"></i>
-                                                        <span>融入素養與學習表現 ({mod.indicators.length})</span>
-                                                        <span className="text-[10px] text-slate-400 font-normal ml-1">（點擊標籤查看說明）</span>
-                                                    </h3>
-
-                                                    {currentUser && (
-                                                        <button
-                                                            onClick={() => setEditingIndicatorsModal(mod.id)}
-                                                            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition flex items-center space-x-1"
-                                                        >
-                                                            <i className="fa-solid fa-sliders"></i>
-                                                            <span>勾選指標</span>
-                                                        </button>
-                                                    )}
-                                                </div>
-
-                                                {/* 指標標籤列 */}
-                                                <div className="flex flex-wrap gap-1.5">
-                                                    {mod.indicators.map((indId) => {
-                                                        const target = ALL_INDICATORS.find(i => i.id === indId);
-                                                        if (!target) return null;
-                                                        const isSelected = currentActiveIndId === indId;
-                                                        return (
-                                                            <button
-                                                                key={target.id}
-                                                                onClick={() => handleIndicatorClick(mod.id, target.id)}
-                                                                className={`text-[11px] px-2.5 py-1 rounded-lg font-medium border transition ${target.tagColor} ${
-                                                                    isSelected ? 'ring-2 ring-indigo-500 scale-105 shadow-sm' : 'hover:opacity-90'
-                                                                } flex items-center space-x-1`}
-                                                            >
-                                                                <span>{target.short}</span>
-                                                                <i className={`fa-solid ${isSelected ? 'fa-circle-xmark text-indigo-600' : 'fa-circle-info opacity-50'} text-[10px] ml-0.5`}></i>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-
-                                                {/* 同色系氣泡說明卡片 (Click-to-Tooltip matching Tag Theme) */}
-                                                {activeIndObj && (
-                                                    <div className={`mt-3 p-3.5 rounded-xl border text-xs space-y-1.5 animate-fadeIn shadow-md backdrop-blur-sm relative transition-all ${popoverStyle.card}`}>
-                                                        <div className="flex items-center justify-between border-b border-current/10 pb-1.5">
-                                                            <span className={`font-bold flex items-center space-x-1.5 ${popoverStyle.title}`}>
-                                                                <i className={`fa-solid fa-bullseye text-xs ${popoverStyle.icon}`}></i>
-                                                                <span>{activeIndObj.title}</span>
-                                                            </span>
-                                                            <button
-                                                                onClick={() => handleIndicatorClick(mod.id, activeIndObj.id)}
-                                                                className={`px-1 transition ${popoverStyle.close}`}
-                                                                title="關閉說明"
-                                                            >
-                                                                <i className="fa-solid fa-xmark text-sm"></i>
-                                                            </button>
-                                                        </div>
-                                                        <p className={`text-[11px] leading-relaxed pt-0.5 font-normal ${popoverStyle.content}`}>
-                                                            {activeIndObj.content}
+                                                    <div className="space-y-1.5 max-w-md">
+                                                        <h3 className="text-white font-bold text-base">
+                                                            {currentMaterial.name || '外部數位教材資源'}
+                                                        </h3>
+                                                        <p className="text-slate-400 text-xs leading-relaxed">
+                                                            此教材已設定為「獨立新頁面開啟」，提供完整全螢幕功能與最佳瀏覽體驗。
                                                         </p>
+                                                    </div>
+                                                    <a
+                                                        href={currentMaterial.url || '#'}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-7 py-3 rounded-xl shadow-xl hover:shadow-indigo-500/30 transition flex items-center space-x-2.5 text-xs border border-indigo-400/30"
+                                                    >
+                                                        <span>🚀 在新分頁開啟教材</span>
+                                                        <i className="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                                    </a>
+                                                </div>
+                                            ) : parsedMat.url ? (
+                                                <iframe
+                                                    id={`iframe-${mod.id}`}
+                                                    src={parsedMat.url}
+                                                    className="w-full h-full border-0"
+                                                    allow="fullscreen; geolocation; webgl; clipboard-write; encrypted-media"
+                                                    allowFullScreen
+                                                ></iframe>
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center h-full text-slate-400 p-6 text-center space-y-2">
+                                                    <i className="fa-solid fa-file-circle-question text-4xl"></i>
+                                                    <p className="text-sm">尚未設定教材內容網址</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {}
+                                    <div className="lg:col-span-5 flex flex-col justify-between space-y-6">
+                                        <div className="space-y-4">
+                                            <div>
+                                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center space-x-1">
+                                                    <i className="fa-solid fa-align-left text-indigo-500"></i>
+                                                    <span>課程說明與導引</span>
+                                                </h3>
+                                                {currentUser ? (
+                                                    <textarea
+                                                        rows="4"
+                                                        value={mod.description}
+                                                        onChange={(e) => {
+                                                            const updated = modules.map(m => m.id === mod.id ? { ...m, description: e.target.value } : m);
+                                                            setModules(updated);
+                                                        }}
+                                                        className="w-full text-xs text-slate-700 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 leading-relaxed font-sans"
+                                                    ></textarea>
+                                                ) : (
+                                                    <div className="text-xs text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50 p-3.5 rounded-xl border border-slate-200/60 font-sans">
+                                                        {mod.description}
                                                     </div>
                                                 )}
                                             </div>
 
+                                            {/* 學生任務按鈕 */}
+                                            <div>
+                                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center space-x-1">
+                                                    <i className="fa-solid fa-list-check text-indigo-500"></i>
+                                                    <span>學生表現任務與互動連結</span>
+                                                </h3>
+
+                                                <div className="flex flex-wrap gap-2.5">
+                                                    {mod.tasks.map((t) => (
+                                                        <div key={t.id} className="inline-block">
+                                                            {currentUser ? (
+                                                                <button
+                                                                    onClick={() => handleTaskClickInTeacherMode(mod.id, t)}
+                                                                    className="bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 text-xs px-3.5 py-2 rounded-xl font-semibold transition flex items-center space-x-1.5 shadow-sm group"
+                                                                    title="點擊修改任務按鈕"
+                                                                >
+                                                                    <span>{t.label}</span>
+                                                                    <i className="fa-solid fa-pen-to-square text-[10px] text-indigo-500 group-hover:scale-110 transition"></i>
+                                                                </button>
+                                                            ) : (
+                                                                <a
+                                                                    href={t.url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-4 py-2 rounded-xl font-semibold transition shadow-sm hover:shadow flex items-center space-x-1.5"
+                                                                >
+                                                                    <span>{t.label}</span>
+                                                                    <i className="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-70"></i>
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    ))}
+
+                                                    {currentUser && (
+                                                        <button
+                                                            onClick={() => setEditingTaskModal({ moduleId: mod.id, task: { label: '', url: '' }, isNew: true })}
+                                                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-2 rounded-xl font-medium border border-dashed border-slate-300 transition flex items-center space-x-1"
+                                                        >
+                                                            <i className="fa-solid fa-plus text-[10px]"></i>
+                                                            <span>新增任務按鈕</span>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
+
+                                        {/* 指標區域 */}
+                                        <div className="border-t border-slate-100 pt-4 relative">
+                                            <div className="flex items-center justify-between mb-2.5">
+                                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1">
+                                                    <i className="fa-solid fa-tags text-indigo-500"></i>
+                                                    <span>融入素養與學習表現 ({mod.indicators.length})</span>
+                                                    <span className="text-[10px] text-slate-400 font-normal ml-1">（點擊標籤查看說明）</span>
+                                                </h3>
+
+                                                {currentUser && (
+                                                    <button
+                                                        onClick={() => setEditingIndicatorsModal(mod.id)}
+                                                        className="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition flex items-center space-x-1"
+                                                    >
+                                                        <i className="fa-solid fa-sliders"></i>
+                                                        <span>勾選指標</span>
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* 指標標籤列 */}
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {mod.indicators.map((indId) => {
+                                                    const target = ALL_INDICATORS.find(i => i.id === indId);
+                                                    if (!target) return null;
+                                                    const isSelected = currentActiveIndId === indId;
+                                                    return (
+                                                        <button
+                                                            key={target.id}
+                                                            onClick={() => handleIndicatorClick(mod.id, target.id)}
+                                                            className={`text-[11px] px-2.5 py-1 rounded-lg font-medium border transition ${target.tagColor} ${
+                                                                isSelected ? 'ring-2 ring-indigo-500 scale-105 shadow-sm' : 'hover:opacity-90'
+                                                            } flex items-center space-x-1`}
+                                                        >
+                                                            <span>{target.short}</span>
+                                                            <i className={`fa-solid ${isSelected ? 'fa-circle-xmark text-indigo-600' : 'fa-circle-info opacity-50'} text-[10px] ml-0.5`}></i>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* 同色系氣泡說明卡片 */}
+                                            {activeIndObj && (
+                                                <div className={`mt-3 p-3.5 rounded-xl border text-xs space-y-1.5 animate-fadeIn shadow-md backdrop-blur-sm relative transition-all ${popoverStyle.card}`}>
+                                                    <div className="flex items-center justify-between border-b border-current/10 pb-1.5">
+                                                        <span className={`font-bold flex items-center space-x-1.5 ${popoverStyle.title}`}>
+                                                            <i className={`fa-solid fa-bullseye text-xs ${popoverStyle.icon}`}></i>
+                                                            <span>{activeIndObj.title}</span>
+                                                        </span>
+                                                        <button
+                                                            onClick={() => handleIndicatorClick(mod.id, activeIndObj.id)}
+                                                            className={`px-1 transition ${popoverStyle.close}`}
+                                                            title="關閉說明"
+                                                        >
+                                                            <i className="fa-solid fa-xmark text-sm"></i>
+                                                        </button>
+                                                    </div>
+                                                    <p className={`text-[11px] leading-relaxed pt-0.5 font-normal ${popoverStyle.content}`}>
+                                                        {activeIndObj.content}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+
                                     </div>
-                                </section>
-                            );
-                        })}
+                                </div>
+                            </section>
+                        );
+                    })}
 
-                        {currentUser && (
-                            <div className="text-center py-4">
-                                <button
-                                    onClick={handleAddModule}
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-2xl shadow-lg transition flex items-center space-x-2 mx-auto"
-                                >
-                                    <i className="fa-solid fa-plus"></i>
-                                    <span>新增週次課程模組</span>
-                                </button>
-                            </div>
-                        )}
-                    </main>
-
-                    {/* Modals 彈窗區域 */}
-                    {editingTaskModal && (
-                        <TaskEditModal
-                            task={editingTaskModal.task}
-                            isNew={editingTaskModal.isNew}
-                            onSave={handleSaveTaskModal}
-                            onDelete={handleDeleteTaskModal}
-                            onClose={() => setEditingTaskModal(null)}
-                        />
+                    {currentUser && (
+                        <div className="text-center py-4">
+                            <button
+                                onClick={handleAddModule}
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-2xl shadow-lg transition flex items-center space-x-2 mx-auto"
+                            >
+                                <i className="fa-solid fa-plus"></i>
+                                <span>新增週次課程模組</span>
+                            </button>
+                        </div>
                     )}
+                </main>
 
-                    {editingIndicatorsModal && (
-                        <IndicatorsSelectModal
-                            selectedIds={modules.find(m => m.id === editingIndicatorsModal)?.indicators || []}
-                            onToggle={(indId) => handleToggleIndicator(editingIndicatorsModal, indId)}
-                            onClose={() => {
-                                setEditingIndicatorsModal(null);
-                                saveSingleModule(editingIndicatorsModal);
-                            }}
-                        />
-                    )}
+                {}
+                {editingTaskModal && (
+                    <TaskEditModal
+                        task={editingTaskModal.task}
+                        isNew={editingTaskModal.isNew}
+                        onSave={handleSaveTaskModal}
+                        onDelete={handleDeleteTaskModal}
+                        onClose={() => setEditingTaskModal(null)}
+                    />
+                )}
 
-                    {loginModalOpen && (
-                        <LoginModal
-                            onLogin={(user) => {
-                                setCurrentUser(user);
-                                setLoginModalOpen(false);
-                                showToast('🔑 登入成功！已切換至教師編輯模式');
-                            }}
-                            onClose={() => setLoginModalOpen(false)}
-                        />
-                    )}
-                </div>
-            );
-        }
+                {editingIndicatorsModal && (
+                    <IndicatorsSelectModal
+                        selectedIds={modules.find(m => m.id === editingIndicatorsModal)?.indicators || []}
+                        onToggle={(indId) => handleToggleIndicator(editingIndicatorsModal, indId)}
+                        onClose={() => {
+                            setEditingIndicatorsModal(null);
+                            saveSingleModule(editingIndicatorsModal);
+                        }}
+                    />
+                )}
+
+                {loginModalOpen && (
+                    <LoginModal
+                        onLogin={(user) => {
+                            setCurrentUser(user);
+                            setLoginModalOpen(false);
+                            showToast('🔑 登入成功！已切換至教師編輯模式');
+                        }}
+                        onClose={() => setLoginModalOpen(false)}
+                    />
+                )}
+            </div>
+        );
+    }
 
         function TaskEditModal({ task, isNew, onSave, onDelete, onClose }) {
             const [label, setLabel] = useState(task.label || '');
@@ -952,7 +1073,7 @@
 
             const handleSubmit = (e) => {
                 e.preventDefault();
-                if (!label.trim()) return alert('請輸入按鈕名稱');
+                if (!label.trim()) return;
                 onSave(label, url);
             };
 
@@ -1113,14 +1234,15 @@
         function LoginModal({ onLogin, onClose }) {
             const [account, setAccount] = useState('');
             const [password, setPassword] = useState('');
+            const [errorMsg, setErrorMsg] = useState('');
 
             const handleLogin = (e) => {
                 e.preventDefault();
                 const validAccounts = ['t5111', 't5125'];
-                if (validAccounts.includes(account) && password === '24567126') {
-                    onLogin(account);
+                if (validAccounts.includes(account.trim()) && password === '24567126') {
+                    onLogin(account.trim());
                 } else {
-                    alert('帳號或密碼錯誤，請重新輸入！');
+                    setErrorMsg('帳號或密碼錯誤，請重新輸入！');
                 }
             };
 
@@ -1136,6 +1258,12 @@
                             <p className="text-xs text-slate-500">登入後即可即時編輯與發布課程內容</p>
                         </div>
 
+                        {errorMsg && (
+                            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs px-3 py-2 rounded-xl text-center font-medium animate-fadeIn">
+                                {errorMsg}
+                            </div>
+                        )}
+
                         <form onSubmit={handleLogin} className="space-y-3 text-xs">
                             <div>
                                 <label className="font-semibold text-slate-700 block mb-1">教師帳號：</label>
@@ -1143,7 +1271,10 @@
                                     type="text"
                                     required
                                     value={account}
-                                    onChange={(e) => setAccount(e.target.value)}
+                                    onChange={(e) => {
+                                        setAccount(e.target.value);
+                                        if (errorMsg) setErrorMsg('');
+                                    }}
                                     placeholder="請輸入帳號"
                                     className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
                                 />
@@ -1155,7 +1286,10 @@
                                     type="password"
                                     required
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        if (errorMsg) setErrorMsg('');
+                                    }}
                                     placeholder="請輸入密碼"
                                     className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
                                 />
