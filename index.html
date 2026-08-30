@@ -1116,7 +1116,8 @@
 
             const handleLogin = (e) => {
                 e.preventDefault();
-                if (account === 't5111' && password === '24567126') {
+                const validAccounts = ['t5111', 't5125'];
+                if (validAccounts.includes(account) && password === '24567126') {
                     onLogin(account);
                 } else {
                     alert('帳號或密碼錯誤，請重新輸入！');
